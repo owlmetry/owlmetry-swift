@@ -16,9 +16,11 @@ dependencies: [
 
 Add `OwlMetry` to your target's `dependencies`.
 
+> For stable releases, pin to a version instead: `.package(url: "…", from: "X.Y.Z")`. See [releases](https://github.com/owlmetry/owlmetry-swift/releases/latest) for the latest.
+
 ### Xcode
 
-`File` → `Add Package Dependencies…` → enter `https://github.com/owlmetry/owlmetry-swift.git`, choose `main` branch, add to your app target.
+`File` → `Add Package Dependencies…` → enter `https://github.com/owlmetry/owlmetry-swift.git`, choose `main` branch (or a specific version), add to your app target.
 
 ## Quickstart
 
