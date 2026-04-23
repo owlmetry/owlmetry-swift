@@ -1,0 +1,109 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run unit tests
+        run: swift test --skip SDKIntegrationTests --skip AppleSearchAdsAttributionTests
+
+  integration:
+    name: Integration tests
+    runs-on: macos-latest
+    steps:
+      - name: Checkout SDK
+        uses: actions/checkout@v4
+        with:
+          path: sdk
+
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          repository: owlmetry/owlmetry
+          path: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Start Postgres and create test DB
+        run: |
+          brew services start postgresql@14 || brew services start postgresql
+          for i in {1..30}; do
+            if pg_isready -h localhost; then
+              echo "Postgres ready"
+              break
+            fi
+            sleep 1
+          done
+          createdb owlmetry_test
+
+      - name: Install and build monorepo
+        working-directory: main
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Seed test database
+        working-directory: main/apps/server
+        env:
+          DATABASE_URL: postgres://runner@localhost:5432/owlmetry_test
+        run: ./node_modules/.bin/tsx ../../scripts/seed-test-db.mts
+
+      - name: Start test server
+        working-directory: main/apps/server
+        env:
+          DATABASE_URL: postgres://runner@localhost:5432/owlmetry_test
+          PORT: "4111"
+          JWT_SECRET: test-secret
+          HOST: 127.0.0.1
+          API_PUBLIC_URL: http://127.0.0.1:4111
+        run: |
+          ./node_modules/.bin/tsx src/index.ts > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+          for i in $(seq 1 40); do
+            if curl -sf "http://127.0.0.1:4111/health" > /dev/null 2>&1; then
+              echo "Server ready"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "Server failed to start"
+          cat /tmp/server.log
+          exit 1
+
+      - name: Run SDK integration tests
+        working-directory: sdk
+        env:
+          OWLMETRY_TEST_ENDPOINT: http://127.0.0.1:4111
+        run: swift test --filter "(SDKIntegrationTests|AppleSearchAdsAttributionTests)"
+
+      - name: Stop test server
+        if: always()
+        run: |
+          if [ -f /tmp/server.pid ]; then
+            kill "$(cat /tmp/server.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log
+          path: /tmp/server.log
