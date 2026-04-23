@@ -4,23 +4,6 @@ on:
   push:
   pull_request:
 
-# Unit tests run standalone and guard day-to-day PRs. Integration tests
-# (SDKIntegrationTests, AppleSearchAdsAttributionTests) require the OwlMetry
-# server running at http://127.0.0.1:4111 with the test DB seeded — they're
-# run locally against a running monorepo server for now:
-#
-#   # in owlmetry/: start test server (see scripts/test-swift-sdk.sh)
-#   # in owlmetry-swift/:
-#   OWLMETRY_TEST_ENDPOINT=http://127.0.0.1:4111 \
-#     swift test --filter "(SDKIntegrationTests|AppleSearchAdsAttributionTests)"
-#
-# Automating the cross-repo integration run on a single macos-latest runner
-# hung in swift test during the first attempt (the Postgres/server/seed
-# steps all succeeded — the hang was in the Swift side, likely a URLSession
-# timeout chain from first-run compilation latency). Revisit as a follow-up;
-# one option is an ubuntu server job that a macos SDK-test job hits over
-# the LAN, which avoids packing too much into a single macos runner.
-
 jobs:
   unit:
     name: Unit tests
@@ -33,3 +16,124 @@ jobs:
 
       - name: Run unit tests
         run: swift test --skip SDKIntegrationTests --skip AppleSearchAdsAttributionTests
+
+  integration:
+    name: Integration tests
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout SDK
+        uses: actions/checkout@v4
+        with:
+          path: sdk
+
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          repository: owlmetry/owlmetry
+          path: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install and start Postgres
+        run: |
+          brew install postgresql@16
+          PG_PREFIX=$(brew --prefix postgresql@16)
+          echo "$PG_PREFIX/bin" >> $GITHUB_PATH
+          export PATH="$PG_PREFIX/bin:$PATH"
+          brew services start postgresql@16
+          for i in {1..30}; do
+            if pg_isready -h localhost; then echo "Postgres ready"; break; fi
+            sleep 1
+          done
+          # setup.ts uses hardcoded postgres://localhost:5432/owlmetry_test (no
+          # creds) and relies on the OS user being a DB superuser via trust
+          # auth — that's how brew-installed postgres sets up the installing
+          # user. createdb inherits those creds.
+          createdb owlmetry_test
+          psql -d owlmetry_test -c "SELECT current_user;"
+
+      - name: Install and build monorepo
+        working-directory: main
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Seed test database
+        working-directory: main/apps/server
+        run: ./node_modules/.bin/tsx ../../scripts/seed-test-db.mts
+
+      - name: Start test server (detached)
+        working-directory: main/apps/server
+        env:
+          DATABASE_URL: postgres://localhost:5432/owlmetry_test
+          PORT: "4111"
+          JWT_SECRET: test-secret
+          HOST: 127.0.0.1
+          API_PUBLIC_URL: http://127.0.0.1:4111
+        run: |
+          # nohup + setsid ensures the server keeps running after this step
+          # exits. Without setsid, GHA can deliver SIGHUP on step teardown and
+          # kill the background process — which previously caused test requests
+          # to hang waiting for URLSession timeouts.
+          setsid nohup ./node_modules/.bin/tsx src/index.ts > /tmp/server.log 2>&1 < /dev/null &
+          echo $! > /tmp/server.pid
+          disown
+          for i in $(seq 1 60); do
+            if curl -sf "http://127.0.0.1:4111/health" > /dev/null 2>&1; then
+              echo "Server ready (pid $(cat /tmp/server.pid))"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "Server failed to start"
+          cat /tmp/server.log
+          exit 1
+
+      - name: Confirm server still up after step boundary
+        run: |
+          if ! kill -0 "$(cat /tmp/server.pid)" 2>/dev/null; then
+            echo "Server PID $(cat /tmp/server.pid) is gone after step boundary"
+            cat /tmp/server.log
+            exit 1
+          fi
+          curl -sf "http://127.0.0.1:4111/health" | head -c 500
+          echo
+          echo "Server healthy ✓"
+
+      - name: Pre-build SDK tests (separate compile time from test runtime)
+        working-directory: sdk
+        run: swift build --build-tests
+
+      - name: Run SDK integration tests
+        working-directory: sdk
+        timeout-minutes: 10
+        env:
+          OWLMETRY_TEST_ENDPOINT: http://127.0.0.1:4111
+        run: |
+          swift test \
+            --skip-build \
+            --filter "(SDKIntegrationTests|AppleSearchAdsAttributionTests)" \
+            2>&1
+
+      - name: Stop test server
+        if: always()
+        run: |
+          if [ -f /tmp/server.pid ]; then
+            kill "$(cat /tmp/server.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log
+          path: /tmp/server.log
