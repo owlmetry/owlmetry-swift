@@ -42,17 +42,12 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      - name: Start Postgres and create test DB
-        run: |
-          brew services start postgresql@14 || brew services start postgresql
-          for i in {1..30}; do
-            if pg_isready -h localhost; then
-              echo "Postgres ready"
-              break
-            fi
-            sleep 1
-          done
-          createdb owlmetry_test
+      - name: Setup Postgres
+        uses: ikalnytskyi/action-setup-postgres@v7
+        with:
+          database: owlmetry_test
+          username: postgres
+          password: postgres
 
       - name: Install and build monorepo
         working-directory: main
@@ -63,13 +58,13 @@ jobs:
       - name: Seed test database
         working-directory: main/apps/server
         env:
-          DATABASE_URL: postgres://runner@localhost:5432/owlmetry_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/owlmetry_test
         run: ./node_modules/.bin/tsx ../../scripts/seed-test-db.mts
 
       - name: Start test server
         working-directory: main/apps/server
         env:
-          DATABASE_URL: postgres://runner@localhost:5432/owlmetry_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/owlmetry_test
           PORT: "4111"
           JWT_SECRET: test-secret
           HOST: 127.0.0.1
