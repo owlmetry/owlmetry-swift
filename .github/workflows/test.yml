@@ -42,12 +42,26 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      - name: Setup Postgres
-        uses: ikalnytskyi/action-setup-postgres@v7
-        with:
-          database: owlmetry_test
-          username: postgres
-          password: postgres
+      - name: Install and start Postgres
+        run: |
+          brew install postgresql@16
+          PG_PREFIX=$(brew --prefix postgresql@16)
+          echo "$PG_PREFIX/bin" >> $GITHUB_PATH
+          export PATH="$PG_PREFIX/bin:$PATH"
+          brew services start postgresql@16
+          for i in {1..30}; do
+            if pg_isready -h localhost; then
+              echo "Postgres ready"
+              break
+            fi
+            sleep 1
+          done
+          # setup.ts uses a hardcoded postgres://localhost:5432/owlmetry_test
+          # (no creds) — relies on the OS user being a DB superuser via trust
+          # auth, which is how brew-installed postgres sets up the installing
+          # user. createdb inherits those creds.
+          createdb owlmetry_test
+          psql -d owlmetry_test -c "SELECT current_user, version();"
 
       - name: Install and build monorepo
         working-directory: main
@@ -57,14 +71,12 @@ jobs:
 
       - name: Seed test database
         working-directory: main/apps/server
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/owlmetry_test
         run: ./node_modules/.bin/tsx ../../scripts/seed-test-db.mts
 
       - name: Start test server
         working-directory: main/apps/server
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/owlmetry_test
+          DATABASE_URL: postgres://localhost:5432/owlmetry_test
           PORT: "4111"
           JWT_SECRET: test-secret
           HOST: 127.0.0.1
