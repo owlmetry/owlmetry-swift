@@ -80,13 +80,14 @@ jobs:
           HOST: 127.0.0.1
           API_PUBLIC_URL: http://127.0.0.1:4111
         run: |
-          # nohup + setsid ensures the server keeps running after this step
-          # exits. Without setsid, GHA can deliver SIGHUP on step teardown and
-          # kill the background process — which previously caused test requests
-          # to hang waiting for URLSession timeouts.
-          setsid nohup ./node_modules/.bin/tsx src/index.ts > /tmp/server.log 2>&1 < /dev/null &
-          echo $! > /tmp/server.pid
-          disown
+          # nohup + disown lets the server survive past the step boundary:
+          # nohup blocks SIGHUP, disown drops the job from the shell's table
+          # so the shell won't kill it on exit. (setsid would also work on
+          # Linux runners but isn't shipped on macOS.)
+          nohup ./node_modules/.bin/tsx src/index.ts > /tmp/server.log 2>&1 < /dev/null &
+          SERVER_PID=$!
+          echo "$SERVER_PID" > /tmp/server.pid
+          disown "$SERVER_PID"
           for i in $(seq 1 60); do
             if curl -sf "http://127.0.0.1:4111/health" > /dev/null 2>&1; then
               echo "Server ready (pid $(cat /tmp/server.pid))"
