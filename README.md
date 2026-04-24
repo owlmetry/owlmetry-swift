@@ -1,8 +1,15 @@
 # OwlMetry Swift SDK
 
+[![Tests](https://github.com/owlmetry/owlmetry-swift/actions/workflows/test.yml/badge.svg)](https://github.com/owlmetry/owlmetry-swift/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/owlmetry/owlmetry-swift?display_name=tag&sort=semver)](https://github.com/owlmetry/owlmetry-swift/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2016%2B%20%7C%20macOS%2013%2B-lightgrey)](./Package.swift)
+
 Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, A/B experiments, screen tracking, and Apple Search Ads attribution capture. Zero external runtime dependencies.
 
 Part of the [OwlMetry](https://owlmetry.com) self-hosted metrics platform.
+
+**Full setup guide & API reference: [owlmetry.com/docs/sdks/swift](https://owlmetry.com/docs/sdks/swift)**
 
 ## Install
 
@@ -35,7 +42,7 @@ try Owl.configure(
 Owl.info("app_launched")
 ```
 
-Call `configure` once at app launch (e.g. from your `App` init). It throws on invalid input. For the full configuration options (attribution, network tracking, compression, offline queue) see the [setup guide](https://owlmetry.com/docs/sdks/swift).
+Call `configure` once at app launch (e.g. from your `App` init). It throws on invalid input.
 
 ## Examples
 
@@ -70,8 +77,6 @@ Owl.step("welcome-screen")
 Owl.step("create-account")
 Owl.step("first-post")
 ```
-
-Full documentation: **[owlmetry.com/docs/sdks/swift](https://owlmetry.com/docs/sdks/swift)**
 
 ## Testing
 
