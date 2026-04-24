@@ -116,6 +116,21 @@ try Owl.configure(
 
 See [Apple Search Ads Attribution](https://owlmetry.com/docs/sdks/swift/configuration#apple-search-ads-attribution) for the full capture → resolve → name-enrichment pipeline, retry semantics, and the `sdk:attribution_capture` debug events emitted to the dashboard.
 
+## Example app
+
+[`Examples/Demo/`](./Examples/Demo/) is a SwiftUI demo that exercises the full SDK surface — screen tracking, events, metrics, funnels, feedback, and attribution. It doubles as the SDK's pre-release canary: a build failure in the demo means `main` is broken before a release cuts.
+
+Open `Examples/Demo/OwlMetryDemo.xcodeproj` in Xcode and run on any iOS simulator, or from the command line:
+
+```bash
+xcodebuild -project Examples/Demo/OwlMetryDemo.xcodeproj \
+  -scheme OwlMetryDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -quiet build
+```
+
+The "Backend Demo" section of the app hits `http://localhost:4007` to exercise session correlation across the Swift SDK and Node SDK. Start the Node demo with `pnpm dev:demo-node` in the [main repo](https://github.com/owlmetry/owlmetry) first.
+
 ## Testing
 
 Unit tests run self-contained:

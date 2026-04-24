@@ -3,6 +3,10 @@ name: Auto-tag release
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'Examples/**'
+      - '**.md'
+      - '.gitignore'
 
 concurrency:
   group: auto-tag
