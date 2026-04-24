@@ -129,7 +129,7 @@ xcodebuild -project Examples/Demo/OwlmetryDemo.xcodeproj \
   -quiet build
 ```
 
-The "Backend Demo" section of the app hits `http://localhost:4007` to exercise session correlation across the Swift SDK and Node SDK. Start the Node demo with `pnpm dev:demo-node` in the [main repo](https://github.com/owlmetry/owlmetry) first.
+The "Backend Demo" section of the app hits `http://localhost:4007` to exercise session correlation across the Swift SDK and Node SDK. Start the Node demo from the sibling [`owlmetry-node`](https://github.com/owlmetry/owlmetry-node) repo first — see [`Examples/Demo/README.md`](https://github.com/owlmetry/owlmetry-node/blob/main/Examples/Demo/README.md) there for the exact commands.
 
 ## Testing
 
