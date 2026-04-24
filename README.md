@@ -27,12 +27,48 @@ Add `OwlMetry` to your target's `dependencies`.
 ```swift
 import OwlMetry
 
-Owl.configure(.init(
-    clientKey: "owl_client_...",
-    endpoint: URL(string: "https://ingest.owlmetry.com")!
-))
+try Owl.configure(
+    endpoint: "https://ingest.owlmetry.com",
+    apiKey: "owl_client_..."
+)
 
-Owl.log(.info, "app_launched")
+Owl.info("app_launched")
+```
+
+Call `configure` once at app launch (e.g. from your `App` init). It throws on invalid input. For the full configuration options (attribution, network tracking, compression, offline queue) see the [setup guide](https://owlmetry.com/docs/sdks/swift).
+
+## Examples
+
+### Logging
+
+```swift
+Owl.info("feed_loaded", screenName: "Feed")
+Owl.warn("cache_miss", attributes: ["key": "user_profile"])
+Owl.error("upload_failed", attributes: ["reason": "timeout"])
+```
+
+### Identify a user
+
+```swift
+Owl.setUser("user_12345")
+Owl.setUserProperties(["plan": "premium"])
+```
+
+### Measure an operation
+
+```swift
+let op = Owl.startOperation("photo_upload", attributes: ["format": "heic"])
+// … do work …
+op.complete(attributes: ["size_kb": "512"])
+// or op.fail(attributes: ["reason": "network"])
+```
+
+### Record a funnel step
+
+```swift
+Owl.step("welcome-screen")
+Owl.step("create-account")
+Owl.step("first-post")
 ```
 
 Full documentation: **[owlmetry.com/docs/sdks/swift](https://owlmetry.com/docs/sdks/swift)**
