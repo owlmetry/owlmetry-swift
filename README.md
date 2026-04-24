@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-iOS%2016%2B%20%7C%20macOS%2013%2B-lightgrey)](./Package.swift)
 
-Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, A/B experiments, screen tracking, and Apple Search Ads attribution capture. Zero external runtime dependencies.
+Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, A/B experiments, screen tracking, a drop-in user feedback view, and Apple Search Ads attribution capture. Zero external runtime dependencies.
 
 Part of the [OwlMetry](https://owlmetry.com) self-hosted metrics platform.
 
@@ -77,6 +77,44 @@ Owl.step("welcome-screen")
 Owl.step("create-account")
 Owl.step("first-post")
 ```
+
+### Collect user feedback
+
+Drop `OwlFeedbackView` into a sheet, push it onto a `NavigationStack`, or embed it inline:
+
+```swift
+.sheet(isPresented: $showFeedback) {
+    NavigationStack {
+        OwlFeedbackView(
+            onSubmitted: { _ in showFeedback = false },
+            onCancel: { showFeedback = false }
+        )
+        .navigationTitle("Feedback")
+    }
+}
+```
+
+For programmatic submission (e.g., forwarding feedback from your own form):
+
+```swift
+try await Owl.sendFeedback("Love the new update!", attributes: ["contact": "me@example.com"])
+```
+
+Every label, placeholder, and error message is overridable via `OwlFeedbackStrings`. See [User Feedback](https://owlmetry.com/docs/sdks/swift/feedback) for presentation modes, localization, and submission lifecycle.
+
+### Apple Search Ads attribution
+
+Attribution is auto-captured on `Owl.configure()` — no extra code needed. To opt out:
+
+```swift
+try Owl.configure(
+    endpoint: "https://ingest.owlmetry.com",
+    apiKey: "owl_client_...",
+    attributionEnabled: false
+)
+```
+
+See [Apple Search Ads Attribution](https://owlmetry.com/docs/sdks/swift/configuration#apple-search-ads-attribution) for the full capture → resolve → name-enrichment pipeline, retry semantics, and the `sdk:attribution_capture` debug events emitted to the dashboard.
 
 ## Testing
 
