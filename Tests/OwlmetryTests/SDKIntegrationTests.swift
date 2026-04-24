@@ -1,8 +1,8 @@
 import XCTest
 import CryptoKit
-@testable import OwlMetry
+@testable import Owlmetry
 
-/// End-to-end tests that run against a real OwlMetry server with a real database.
+/// End-to-end tests that run against a real Owlmetry server with a real database.
 /// These require the server to be running at TEST_ENDPOINT with the test database seeded.
 /// Run via: `pnpm test:swift-sdk` (which handles server lifecycle automatically).
 final class SDKIntegrationTests: XCTestCase {

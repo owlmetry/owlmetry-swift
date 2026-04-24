@@ -1,8 +1,8 @@
 import SwiftUI
-import OwlMetry
+import Owlmetry
 
 @main
-struct OwlMetryDemoApp: App {
+struct OwlmetryDemoApp: App {
     init() {
         do {
             try Owl.configure(
@@ -10,7 +10,7 @@ struct OwlMetryDemoApp: App {
                 apiKey: "owl_client_demo_000000000000000000000000000000000000000000"
             )
         } catch {
-            print("OwlMetry configuration failed: \(error)")
+            print("Owlmetry configuration failed: \(error)")
         }
     }
 

@@ -1,5 +1,5 @@
 import XCTest
-@testable import OwlMetry
+@testable import Owlmetry
 
 final class DuplicateFilterTests: XCTestCase {
     private var filter: DuplicateFilter!

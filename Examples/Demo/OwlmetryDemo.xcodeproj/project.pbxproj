@@ -7,18 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10001 /* OwlMetryDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20001 /* OwlMetryDemoApp.swift */; };
+		A10001 /* OwlmetryDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20001 /* OwlmetryDemoApp.swift */; };
 		A10002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20002 /* ContentView.swift */; };
 		A10003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20003 /* Assets.xcassets */; };
-		A10004 /* OwlMetry in Frameworks */ = {isa = PBXBuildFile; productRef = A80001 /* OwlMetry */; };
+		A10004 /* Owlmetry in Frameworks */ = {isa = PBXBuildFile; productRef = A80001 /* Owlmetry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A20001 /* OwlMetryDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwlMetryDemoApp.swift; sourceTree = "<group>"; };
+		A20001 /* OwlmetryDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwlmetryDemoApp.swift; sourceTree = "<group>"; };
 		A20002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A20005 /* OwlMetryDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OwlMetryDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20005 /* OwlmetryDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OwlmetryDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -26,7 +26,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10004 /* OwlMetry in Frameworks */,
+				A10004 /* Owlmetry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -36,26 +36,26 @@
 		A40001 = {
 			isa = PBXGroup;
 			children = (
-				A40002 /* OwlMetryDemo */,
+				A40002 /* OwlmetryDemo */,
 				A40003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A40002 /* OwlMetryDemo */ = {
+		A40002 /* OwlmetryDemo */ = {
 			isa = PBXGroup;
 			children = (
-				A20001 /* OwlMetryDemoApp.swift */,
+				A20001 /* OwlmetryDemoApp.swift */,
 				A20002 /* ContentView.swift */,
 				A20003 /* Assets.xcassets */,
 				A20004 /* Info.plist */,
 			);
-			path = OwlMetryDemo;
+			path = OwlmetryDemo;
 			sourceTree = "<group>";
 		};
 		A40003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A20005 /* OwlMetryDemo.app */,
+				A20005 /* OwlmetryDemo.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -63,9 +63,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A50001 /* OwlMetryDemo */ = {
+		A50001 /* OwlmetryDemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A70002 /* Build configuration list for PBXNativeTarget "OwlMetryDemo" */;
+			buildConfigurationList = A70002 /* Build configuration list for PBXNativeTarget "OwlmetryDemo" */;
 			buildPhases = (
 				A60001 /* Sources */,
 				A30001 /* Frameworks */,
@@ -75,12 +75,12 @@
 			);
 			dependencies = (
 			);
-			name = OwlMetryDemo;
+			name = OwlmetryDemo;
 			packageProductDependencies = (
-				A80001 /* OwlMetry */,
+				A80001 /* Owlmetry */,
 			);
-			productName = OwlMetryDemo;
-			productReference = A20005 /* OwlMetryDemo.app */;
+			productName = OwlmetryDemo;
+			productReference = A20005 /* OwlmetryDemo.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -98,7 +98,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A70001 /* Build configuration list for PBXProject "OwlMetryDemo" */;
+			buildConfigurationList = A70001 /* Build configuration list for PBXProject "OwlmetryDemo" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -114,7 +114,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A50001 /* OwlMetryDemo */,
+				A50001 /* OwlmetryDemo */,
 			);
 		};
 /* End PBXProject section */
@@ -135,7 +135,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10001 /* OwlMetryDemoApp.swift in Sources */,
+				A10001 /* OwlmetryDemoApp.swift in Sources */,
 				A10002 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -269,7 +269,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = OwlMetryDemo/Info.plist;
+				INFOPLIST_FILE = OwlmetryDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -296,7 +296,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = OwlMetryDemo/Info.plist;
+				INFOPLIST_FILE = OwlmetryDemo/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -318,7 +318,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A70001 /* Build configuration list for PBXProject "OwlMetryDemo" */ = {
+		A70001 /* Build configuration list for PBXProject "OwlmetryDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B10001 /* Debug */,
@@ -327,7 +327,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A70002 /* Build configuration list for PBXNativeTarget "OwlMetryDemo" */ = {
+		A70002 /* Build configuration list for PBXNativeTarget "OwlmetryDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B20001 /* Debug */,
@@ -350,9 +350,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A80001 /* OwlMetry */ = {
+		A80001 /* Owlmetry */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = OwlMetry;
+			productName = Owlmetry;
 		};
 /* End XCSwiftPackageProductDependency section */
 

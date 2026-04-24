@@ -1,7 +1,7 @@
 import XCTest
-@testable import OwlMetry
+@testable import Owlmetry
 
-/// End-to-end Apple Search Ads attribution tests against a real OwlMetry
+/// End-to-end Apple Search Ads attribution tests against a real Owlmetry
 /// server. Uses the server's `dev_mock` body field to bypass the upstream
 /// Apple AdServices call — the simulator cannot mint a real AAAttribution
 /// token, and we want these tests to validate the SDK <-> server wire

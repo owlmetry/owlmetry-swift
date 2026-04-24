@@ -32,27 +32,27 @@ public struct OwlFeedbackStrings: Sendable {
     public var noContactAddDetails: LocalizedStringResource
 
     public init(
-        header: LocalizedStringResource = .init("owl.feedback.header", defaultValue: "How can we improve?", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        footer: LocalizedStringResource = .init("owl.feedback.footer", defaultValue: "We read every piece of feedback.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        messagePlaceholder: LocalizedStringResource = .init("owl.feedback.message.placeholder", defaultValue: "Tell us what's on your mind…", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        contactSectionTitle: LocalizedStringResource = .init("owl.feedback.contact.section", defaultValue: "Contact (optional)", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        contactSectionFooter: LocalizedStringResource = .init("owl.feedback.contact.footer", defaultValue: "Leave these blank and we'll still get your feedback.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        namePlaceholder: LocalizedStringResource = .init("owl.feedback.name.placeholder", defaultValue: "Your name", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        emailPlaceholder: LocalizedStringResource = .init("owl.feedback.email.placeholder", defaultValue: "you@example.com", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        submitButton: LocalizedStringResource = .init("owl.feedback.submit", defaultValue: "Send feedback", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        submittingButton: LocalizedStringResource = .init("owl.feedback.submitting", defaultValue: "Sending…", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        cancelButton: LocalizedStringResource = .init("owl.feedback.cancel", defaultValue: "Cancel", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        successTitle: LocalizedStringResource = .init("owl.feedback.success.title", defaultValue: "Thanks!", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        successBody: LocalizedStringResource = .init("owl.feedback.success.body", defaultValue: "Your feedback made it through.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        errorTitle: LocalizedStringResource = .init("owl.feedback.error.title", defaultValue: "Couldn't send feedback", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        errorBlankMessage: LocalizedStringResource = .init("owl.feedback.error.blank", defaultValue: "Please write a message first.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        errorInvalidEmail: LocalizedStringResource = .init("owl.feedback.error.email", defaultValue: "That doesn't look like a valid email.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        errorIncompleteContact: LocalizedStringResource = .init("owl.feedback.error.incomplete_contact", defaultValue: "Please provide both name and email or leave both empty.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        errorGeneric: LocalizedStringResource = .init("owl.feedback.error.generic", defaultValue: "Something went wrong. Please try again.", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        noContactAlertTitle: LocalizedStringResource = .init("owl.feedback.no_contact.title", defaultValue: "No contact details", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        noContactAlertMessage: LocalizedStringResource = .init("owl.feedback.no_contact.message", defaultValue: "Without your contact details, we won't be able to follow up on your feedback. Are you sure you want to continue?", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        noContactSubmitAnyway: LocalizedStringResource = .init("owl.feedback.no_contact.submit", defaultValue: "Submit anyway", bundle: .atURL(OwlMetryBundle.resources.bundleURL)),
-        noContactAddDetails: LocalizedStringResource = .init("owl.feedback.no_contact.add", defaultValue: "Add contact details", bundle: .atURL(OwlMetryBundle.resources.bundleURL))
+        header: LocalizedStringResource = .init("owl.feedback.header", defaultValue: "How can we improve?", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        footer: LocalizedStringResource = .init("owl.feedback.footer", defaultValue: "We read every piece of feedback.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        messagePlaceholder: LocalizedStringResource = .init("owl.feedback.message.placeholder", defaultValue: "Tell us what's on your mind…", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        contactSectionTitle: LocalizedStringResource = .init("owl.feedback.contact.section", defaultValue: "Contact (optional)", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        contactSectionFooter: LocalizedStringResource = .init("owl.feedback.contact.footer", defaultValue: "Leave these blank and we'll still get your feedback.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        namePlaceholder: LocalizedStringResource = .init("owl.feedback.name.placeholder", defaultValue: "Your name", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        emailPlaceholder: LocalizedStringResource = .init("owl.feedback.email.placeholder", defaultValue: "you@example.com", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        submitButton: LocalizedStringResource = .init("owl.feedback.submit", defaultValue: "Send feedback", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        submittingButton: LocalizedStringResource = .init("owl.feedback.submitting", defaultValue: "Sending…", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        cancelButton: LocalizedStringResource = .init("owl.feedback.cancel", defaultValue: "Cancel", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        successTitle: LocalizedStringResource = .init("owl.feedback.success.title", defaultValue: "Thanks!", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        successBody: LocalizedStringResource = .init("owl.feedback.success.body", defaultValue: "Your feedback made it through.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        errorTitle: LocalizedStringResource = .init("owl.feedback.error.title", defaultValue: "Couldn't send feedback", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        errorBlankMessage: LocalizedStringResource = .init("owl.feedback.error.blank", defaultValue: "Please write a message first.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        errorInvalidEmail: LocalizedStringResource = .init("owl.feedback.error.email", defaultValue: "That doesn't look like a valid email.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        errorIncompleteContact: LocalizedStringResource = .init("owl.feedback.error.incomplete_contact", defaultValue: "Please provide both name and email or leave both empty.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        errorGeneric: LocalizedStringResource = .init("owl.feedback.error.generic", defaultValue: "Something went wrong. Please try again.", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        noContactAlertTitle: LocalizedStringResource = .init("owl.feedback.no_contact.title", defaultValue: "No contact details", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        noContactAlertMessage: LocalizedStringResource = .init("owl.feedback.no_contact.message", defaultValue: "Without your contact details, we won't be able to follow up on your feedback. Are you sure you want to continue?", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        noContactSubmitAnyway: LocalizedStringResource = .init("owl.feedback.no_contact.submit", defaultValue: "Submit anyway", bundle: .atURL(OwlmetryBundle.resources.bundleURL)),
+        noContactAddDetails: LocalizedStringResource = .init("owl.feedback.no_contact.add", defaultValue: "Add contact details", bundle: .atURL(OwlmetryBundle.resources.bundleURL))
     ) {
         self.header = header
         self.footer = footer

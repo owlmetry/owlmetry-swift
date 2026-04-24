@@ -1,5 +1,5 @@
 import XCTest
-@testable import OwlMetry
+@testable import Owlmetry
 
 final class EventTransportTests: XCTestCase {
     private var tempDir: URL!

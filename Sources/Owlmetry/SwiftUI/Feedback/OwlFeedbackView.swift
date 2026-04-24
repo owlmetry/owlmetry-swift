@@ -12,7 +12,7 @@ public enum OwlFeedbackActionsPlacement: Sendable {
 }
 
 /// A reusable SwiftUI view that collects free-text feedback (plus optional name
-/// and email) and submits it to OwlMetry via `Owl.sendFeedback`.
+/// and email) and submits it to Owlmetry via `Owl.sendFeedback`.
 ///
 /// The view does not set `.navigationTitle` or wrap itself in a `NavigationStack` —
 /// the host decides how to present it. Default actions placement is `.toolbar`,

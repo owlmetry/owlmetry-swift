@@ -47,7 +47,7 @@ public enum OwlFeedbackError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return "OwlMetry is not configured. Call Owl.configure(...) before sending feedback."
+            return "Owlmetry is not configured. Call Owl.configure(...) before sending feedback."
         case .emptyMessage:
             return "Feedback message is empty."
         case .serverError(let code, let body):

@@ -1,4 +1,4 @@
-# OwlMetry Swift SDK
+# Owlmetry Swift SDK
 
 [![Tests](https://github.com/owlmetry/owlmetry-swift/actions/workflows/test.yml/badge.svg)](https://github.com/owlmetry/owlmetry-swift/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/owlmetry/owlmetry-swift?display_name=tag&sort=semver)](https://github.com/owlmetry/owlmetry-swift/releases/latest)
@@ -7,7 +7,7 @@
 
 Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, A/B experiments, screen tracking, a drop-in user feedback view, and Apple Search Ads attribution capture. Zero external runtime dependencies.
 
-Part of the [OwlMetry](https://owlmetry.com) self-hosted metrics platform.
+Part of the [Owlmetry](https://owlmetry.com) self-hosted metrics platform.
 
 **Full setup guide & API reference: [owlmetry.com/docs/sdks/swift](https://owlmetry.com/docs/sdks/swift)**
 
@@ -21,7 +21,7 @@ dependencies: [
 ]
 ```
 
-Add `OwlMetry` to your target's `dependencies`.
+Add `Owlmetry` to your target's `dependencies`.
 
 > For stable releases, pin to a version instead: `.package(url: "…", from: "X.Y.Z")`. See [releases](https://github.com/owlmetry/owlmetry-swift/releases/latest) for the latest.
 
@@ -32,7 +32,7 @@ Add `OwlMetry` to your target's `dependencies`.
 ## Quickstart
 
 ```swift
-import OwlMetry
+import Owlmetry
 
 try Owl.configure(
     endpoint: "https://ingest.owlmetry.com",
@@ -120,11 +120,11 @@ See [Apple Search Ads Attribution](https://owlmetry.com/docs/sdks/swift/configur
 
 [`Examples/Demo/`](./Examples/Demo/) is a SwiftUI demo that exercises the full SDK surface — screen tracking, events, metrics, funnels, feedback, and attribution. It doubles as the SDK's pre-release canary: a build failure in the demo means `main` is broken before a release cuts.
 
-Open `Examples/Demo/OwlMetryDemo.xcodeproj` in Xcode and run on any iOS simulator, or from the command line:
+Open `Examples/Demo/OwlmetryDemo.xcodeproj` in Xcode and run on any iOS simulator, or from the command line:
 
 ```bash
-xcodebuild -project Examples/Demo/OwlMetryDemo.xcodeproj \
-  -scheme OwlMetryDemo \
+xcodebuild -project Examples/Demo/OwlmetryDemo.xcodeproj \
+  -scheme OwlmetryDemo \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   -quiet build
 ```
@@ -139,7 +139,7 @@ Unit tests run self-contained:
 swift test --skip SDKIntegrationTests --skip AppleSearchAdsAttributionTests
 ```
 
-Integration tests require the OwlMetry server running on `http://127.0.0.1:4111`. See the [main repo](https://github.com/owlmetry/owlmetry) for running the server locally; then:
+Integration tests require the Owlmetry server running on `http://127.0.0.1:4111`. See the [main repo](https://github.com/owlmetry/owlmetry) for running the server locally; then:
 
 ```bash
 OWLMETRY_TEST_ENDPOINT=http://127.0.0.1:4111 \

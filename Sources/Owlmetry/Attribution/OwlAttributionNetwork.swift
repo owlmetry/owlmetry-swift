@@ -1,6 +1,6 @@
 import Foundation
 
-/// Attribution networks supported by OwlMetry.
+/// Attribution networks supported by Owlmetry.
 ///
 /// Kept internal: the public Swift API is network-specific (each network has
 /// its own capture mechanism and data shape) so consumers never need to

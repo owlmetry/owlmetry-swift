@@ -1,5 +1,5 @@
 import SwiftUI
-import OwlMetry
+import Owlmetry
 
 struct ContentView: View {
     @State private var userId = ""
@@ -26,7 +26,7 @@ struct ContentView: View {
                 backendDemoSection
                 logOutputSection
             }
-            .navigationTitle("OwlMetry Demo")
+            .navigationTitle("Owlmetry Demo")
             .sheet(isPresented: $showFeedbackSheet) {
                 NavigationStack {
                     OwlFeedbackView(

@@ -1,5 +1,5 @@
 import Foundation
-@testable import OwlMetry
+@testable import Owlmetry
 
 extension LogEvent {
     static func stub(

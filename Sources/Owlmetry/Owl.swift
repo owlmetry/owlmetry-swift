@@ -231,7 +231,7 @@ public enum Owl {
     // MARK: - Attribution
 
     /// Submit an Apple Search Ads attribution token obtained by the app
-    /// itself (for example from a custom attribution flow) and let OwlMetry
+    /// itself (for example from a custom attribution flow) and let Owlmetry
     /// resolve it with Apple.
     ///
     /// You do **not** need to call this in normal use — `Owl.configure()`
@@ -579,7 +579,7 @@ public enum Owl {
             displayMessage = message
         }
 
-        var line = "🦉 OwlMetry \(tag) \(displayMessage)"
+        var line = "🦉 Owlmetry \(tag) \(displayMessage)"
         if let attributes, !attributes.isEmpty {
             let pairs = attributes.sorted(by: { $0.key < $1.key }).map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
             line += " {\(pairs)}"

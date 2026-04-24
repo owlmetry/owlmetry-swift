@@ -3,21 +3,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "OwlMetry",
+    name: "Owlmetry",
     platforms: [
         .iOS(.v16),
         .macOS(.v13),
     ],
     products: [
-        .library(name: "OwlMetry", targets: ["OwlMetry"]),
+        .library(name: "Owlmetry", targets: ["Owlmetry"]),
     ],
     targets: [
         .target(
-            name: "OwlMetry",
+            name: "Owlmetry",
             resources: [
                 .process("Resources"),
             ]
         ),
-        .testTarget(name: "OwlMetryTests", dependencies: ["OwlMetry"]),
+        .testTarget(name: "OwlmetryTests", dependencies: ["Owlmetry"]),
     ]
 )
