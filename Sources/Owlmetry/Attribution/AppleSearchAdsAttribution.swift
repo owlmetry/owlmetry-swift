@@ -52,9 +52,11 @@ enum AppleSearchAdsAttribution {
             return
         }
 
-        guard let token = await fetchToken() else {
-            // Token unavailable (simulator w/o mock, non-Apple platform, or
-            // AdServices call failed). We'll retry on next configure().
+        guard let token = await fetchToken(), !token.isEmpty else {
+            // Token unavailable (simulator w/o mock, non-Apple platform,
+            // AdServices call failed, or AdServices returned an empty string —
+            // observed in restricted regions and when the user disabled
+            // personalized ads). We'll retry on next configure().
             return
         }
 
@@ -124,9 +126,11 @@ enum AppleSearchAdsAttribution {
             return false
         case .invalidToken:
             // Apple keeps the same token for the install, so a second fetch
-            // gives us the same string — not worth retrying.
+            // gives us the same string — not worth retrying. Logged at warn:
+            // for apps without ASA campaigns or in restricted regions, this
+            // is the expected steady state, not a bug.
             logger.warning("Attribution token rejected as invalid; not retrying.")
-            Owl.error("sdk:attribution_capture", attributes: [
+            Owl.warn("sdk:attribution_capture", attributes: [
                 "_network": OwlAttributionNetwork.appleSearchAds.slug,
                 "_outcome": "invalid_token",
             ])
