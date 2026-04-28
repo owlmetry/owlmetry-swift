@@ -13,6 +13,40 @@ final class SDKIntegrationTests: XCTestCase {
     static let testAgentKey = "owl_agent_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     static let testBundleId = "com.owlmetry.test"
 
+    /// Runs once before any test in this class. Truncates the event-bearing
+    /// tables so re-runs against the same `owlmetry_test` DB don't accumulate
+    /// rows that would collide with the fixed `screen_name` filters used in
+    /// these tests. Tests inside a single invocation use distinct screen_names
+    /// (or unique UUIDs) and don't conflict with each other.
+    override class func setUp() {
+        super.setUp()
+        let dbUrl = ProcessInfo.processInfo.environment["OWLMETRY_TEST_DB_URL"]
+            ?? "postgres://localhost:5432/owlmetry_test"
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = [
+            "psql", dbUrl, "-v", "ON_ERROR_STOP=1", "-c",
+            """
+            DELETE FROM event_attachments;
+            DELETE FROM feedback_comments;
+            DELETE FROM feedback;
+            DELETE FROM events;
+            DELETE FROM metric_events;
+            DELETE FROM funnel_events;
+            """,
+        ]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+        do {
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            // psql missing or connection refused — let the first test fail with
+            // the real assertion message rather than masking it here.
+        }
+    }
+
     override func setUp() async throws {
         // Reset SDK state (simulates app restart)
         await Owl.reset()
