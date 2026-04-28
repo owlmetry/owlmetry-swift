@@ -10,6 +10,8 @@ struct FeedbackRequestBody: Codable, Sendable {
     let submitter_name: String?
     let submitter_email: String?
     let app_version: String?
+    let sdk_name: String?
+    let sdk_version: String?
     let environment: String?
     let device_model: String?
     let os_version: String?

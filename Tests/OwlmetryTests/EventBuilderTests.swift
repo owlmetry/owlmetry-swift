@@ -37,6 +37,8 @@ final class EventBuilderTests: XCTestCase {
         XCTAssertEqual(event.buildNumber, "42")
         XCTAssertEqual(event.deviceModel, "iPhone16,1")
         XCTAssertEqual(event.locale, "en_US")
+        XCTAssertEqual(event.sdkName, OwlmetryVersion.name)
+        XCTAssertEqual(event.sdkVersion, OwlmetryVersion.current)
     }
 
     func testSourceModuleFormattedFromFileFunctionLine() {

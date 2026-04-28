@@ -424,6 +424,8 @@ public enum Owl {
             submitter_name: trimNil(name),
             submitter_email: trimNil(email),
             app_version: deviceInfo.appVersion,
+            sdk_name: OwlmetryVersion.name,
+            sdk_version: OwlmetryVersion.current,
             environment: deviceInfo.platform.rawValue,
             device_model: deviceInfo.deviceModel,
             os_version: deviceInfo.osVersion,

@@ -12,6 +12,8 @@ struct LogEvent: Codable, Sendable {
     let environment: OwlPlatform
     let osVersion: String?
     let appVersion: String?
+    let sdkName: String?
+    let sdkVersion: String?
     let buildNumber: String?
     let deviceModel: String?
     let locale: String?
@@ -31,6 +33,8 @@ struct LogEvent: Codable, Sendable {
         case environment
         case osVersion = "os_version"
         case appVersion = "app_version"
+        case sdkName = "sdk_name"
+        case sdkVersion = "sdk_version"
         case buildNumber = "build_number"
         case deviceModel = "device_model"
         case locale

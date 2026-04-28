@@ -21,6 +21,8 @@ extension LogEvent {
             environment: .ios,
             osVersion: "17.0.0",
             appVersion: "1.0",
+            sdkName: OwlmetryVersion.name,
+            sdkVersion: OwlmetryVersion.current,
             buildNumber: "1",
             deviceModel: "iPhone16,1",
             locale: "en_US",

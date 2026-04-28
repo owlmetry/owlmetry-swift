@@ -50,6 +50,8 @@ enum EventBuilder {
             environment: deviceInfo.platform,
             osVersion: deviceInfo.osVersion,
             appVersion: deviceInfo.appVersion,
+            sdkName: OwlmetryVersion.name,
+            sdkVersion: OwlmetryVersion.current,
             buildNumber: deviceInfo.buildNumber,
             deviceModel: deviceInfo.deviceModel,
             locale: deviceInfo.locale,

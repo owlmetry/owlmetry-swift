@@ -15,6 +15,8 @@ final class LogEventTests: XCTestCase {
             environment: .ios,
             osVersion: "17.0",
             appVersion: "2.0",
+            sdkName: "owlmetry-swift",
+            sdkVersion: "0.1.0",
             buildNumber: "100",
             deviceModel: "iPhone16,1",
             locale: "en_US",
@@ -47,6 +49,8 @@ final class LogEventTests: XCTestCase {
             environment: .macos,
             osVersion: nil,
             appVersion: nil,
+            sdkName: nil,
+            sdkVersion: nil,
             buildNumber: nil,
             deviceModel: nil,
             locale: nil,
@@ -76,6 +80,8 @@ final class LogEventTests: XCTestCase {
             environment: .ios,
             osVersion: nil,
             appVersion: nil,
+            sdkName: nil,
+            sdkVersion: nil,
             buildNumber: nil,
             deviceModel: nil,
             locale: nil,
@@ -93,5 +99,35 @@ final class LogEventTests: XCTestCase {
         XCTAssertNil(json["screen_name"])
         XCTAssertNil(json["custom_attributes"])
         XCTAssertNil(json["os_version"])
+        XCTAssertNil(json["sdk_name"])
+        XCTAssertNil(json["sdk_version"])
+    }
+
+    func testSDKNameAndVersionEncodedAsSnakeCase() throws {
+        let event = LogEvent(
+            clientEventId: "id",
+            sessionId: "session-id",
+            userId: nil,
+            level: .info,
+            sourceModule: nil,
+            message: "test",
+            screenName: nil,
+            customAttributes: nil,
+            environment: .ios,
+            osVersion: nil,
+            appVersion: nil,
+            sdkName: "owlmetry-swift",
+            sdkVersion: "1.2.3",
+            buildNumber: nil,
+            deviceModel: nil,
+            locale: nil,
+            isDev: false,
+            experiments: nil,
+            timestamp: "2026-01-01T00:00:00.000Z"
+        )
+        let data = try JSONEncoder().encode(event)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        XCTAssertEqual(json["sdk_name"] as? String, "owlmetry-swift")
+        XCTAssertEqual(json["sdk_version"] as? String, "1.2.3")
     }
 }

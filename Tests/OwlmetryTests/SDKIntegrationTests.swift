@@ -447,6 +447,8 @@ final class SDKIntegrationTests: XCTestCase {
                 environment: .macos,
                 osVersion: "15.0",
                 appVersion: "1.0",
+                sdkName: OwlmetryVersion.name,
+                sdkVersion: OwlmetryVersion.current,
                 buildNumber: "1",
                 deviceModel: "Mac",
                 locale: "en_US",
