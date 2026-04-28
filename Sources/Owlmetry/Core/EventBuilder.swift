@@ -1,5 +1,8 @@
 import Foundation
 
+/// Assembles every outgoing `LogEvent` from the SDK. SDK identity
+/// (`sdk_name`, `sdk_version`) is stamped here from `OwlmetryVersion`
+/// so consumers never need to set it on the call site.
 enum EventBuilder {
     static let systemMetaKeys: Set<String> = ["_file", "_function", "_line", "_connection"]
 
