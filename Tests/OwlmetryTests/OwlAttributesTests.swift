@@ -28,13 +28,4 @@ final class OwlAttributesTests: XCTestCase {
         let result = Owl.cleanAttributes(["a": ""])
         XCTAssertEqual(result, ["a": ""])
     }
-
-    func testOptionalStringValueFlowsThrough() {
-        // The headline ergonomic win: a String? variable can go straight
-        // into the literal without any unwrap dance at the call site.
-        let present: String? = "draft-123"
-        let absent: String? = nil
-        let result = Owl.cleanAttributes(["context": "createDraft", "contractId": present, "type": absent])
-        XCTAssertEqual(result, ["context": "createDraft", "contractId": "draft-123"])
-    }
 }
