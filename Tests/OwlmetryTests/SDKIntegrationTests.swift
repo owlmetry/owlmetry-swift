@@ -141,6 +141,31 @@ final class SDKIntegrationTests: XCTestCase {
         XCTAssertEqual(attributes["currency"], "USD")
     }
 
+    /// Optional-valued attributes can flow through the public `attributes:`
+    /// parameter directly. Nil values are dropped before the event ships.
+    func testOptionalAttributeValuesFiltered() async throws {
+        try Owl.configure(endpoint: Self.testEndpoint, apiKey: Self.testClientKey, bundleId: Self.testBundleId)
+
+        let presentValue: String? = "draft-123"
+        let missingValue: String? = nil
+        Owl.info("optional attrs", screenName: "optional-attrs",
+                 attributes: ["context": "createDraft", "contractId": presentValue, "type": missingValue])
+
+        await Owl.shutdown()
+
+        let events = try await queryEvents(screenName: "optional-attrs")
+
+        guard let event = events.first(where: { ($0["message"] as? String) == "optional attrs" }) else {
+            XCTFail("Event not found")
+            return
+        }
+
+        let attributes = event["custom_attributes"] as? [String: String] ?? [:]
+        XCTAssertEqual(attributes["context"], "createDraft")
+        XCTAssertEqual(attributes["contractId"], "draft-123")
+        XCTAssertNil(attributes["type"], "Nil-valued attribute should be omitted from the shipped event")
+    }
+
     func testClientEventIdDedup() async throws {
         try Owl.configure(endpoint: Self.testEndpoint, apiKey: Self.testClientKey, bundleId: Self.testBundleId)
 

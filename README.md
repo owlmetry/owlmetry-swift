@@ -52,6 +52,11 @@ Call `configure` once at app launch (e.g. from your `App` init). It throws on in
 Owl.info("feed_loaded", screenName: "Feed")
 Owl.warn("cache_miss", attributes: ["key": "user_profile"])
 Owl.error("upload_failed", attributes: ["reason": "timeout"])
+
+// Optional values pass through `attributes:` directly. Nil values are
+// dropped before the event ships, so you don't need to unwrap first.
+let contractId: String? = session.draftId
+Owl.info("draft_created", attributes: ["context": "createDraft", "contractId": contractId])
 ```
 
 ### Identify a user

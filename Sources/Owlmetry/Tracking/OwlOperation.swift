@@ -15,12 +15,12 @@ public final class OwlOperation: Sendable {
 
     /// Complete the operation successfully. Auto-adds duration_ms.
     public func complete(
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        var attrs = attributes ?? [:]
+        var attrs: [String: String?] = attributes
         attrs["tracking_id"] = trackingId
         attrs["duration_ms"] = String(durationMs())
         Owl.info("metric:\(metric):complete", attributes: attrs, file: file, function: function, line: line)
@@ -29,12 +29,12 @@ public final class OwlOperation: Sendable {
     /// Record a failed operation. Auto-adds duration_ms + error.
     public func fail(
         error: String,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        var attrs = attributes ?? [:]
+        var attrs: [String: String?] = attributes
         attrs["tracking_id"] = trackingId
         attrs["duration_ms"] = String(durationMs())
         attrs["error"] = error
@@ -43,12 +43,12 @@ public final class OwlOperation: Sendable {
 
     /// Cancel the operation. Auto-adds duration_ms.
     public func cancel(
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        var attrs = attributes ?? [:]
+        var attrs: [String: String?] = attributes
         attrs["tracking_id"] = trackingId
         attrs["duration_ms"] = String(durationMs())
         Owl.info("metric:\(metric):cancel", attributes: attrs, file: file, function: function, line: line)

@@ -270,52 +270,52 @@ public enum Owl {
     public static func info(
         _ message: String,
         screenName: String? = nil,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         attachments: [OwlAttachment]? = nil,
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        log(message, level: .info, screenName: screenName, attributes: attributes, attachments: attachments,
+        log(message, level: .info, screenName: screenName, attributes: cleanAttributes(attributes), attachments: attachments,
             file: file, function: function, line: line)
     }
 
     public static func debug(
         _ message: String,
         screenName: String? = nil,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         attachments: [OwlAttachment]? = nil,
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        log(message, level: .debug, screenName: screenName, attributes: attributes, attachments: attachments,
+        log(message, level: .debug, screenName: screenName, attributes: cleanAttributes(attributes), attachments: attachments,
             file: file, function: function, line: line)
     }
 
     public static func warn(
         _ message: String,
         screenName: String? = nil,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         attachments: [OwlAttachment]? = nil,
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        log(message, level: .warn, screenName: screenName, attributes: attributes, attachments: attachments,
+        log(message, level: .warn, screenName: screenName, attributes: cleanAttributes(attributes), attachments: attachments,
             file: file, function: function, line: line)
     }
 
     public static func error(
         _ message: String,
         screenName: String? = nil,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         attachments: [OwlAttachment]? = nil,
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
-        log(message, level: .error, screenName: screenName, attributes: attributes, attachments: attachments,
+        log(message, level: .error, screenName: screenName, attributes: cleanAttributes(attributes), attachments: attachments,
             file: file, function: function, line: line)
     }
 
@@ -324,7 +324,7 @@ public enum Owl {
     /// Record a funnel step. Sends an info-level event with message `"step:<stepName>"`.
     public static func step(
         _ stepName: String,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
@@ -337,7 +337,7 @@ public enum Owl {
     @available(*, deprecated, renamed: "step(_:attributes:file:function:line:)")
     public static func track(
         _ stepName: String,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
@@ -476,14 +476,14 @@ public enum Owl {
     /// with a warning logged.
     public static func startOperation(
         _ metric: String,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) -> OwlOperation {
         let slug = normalizeSlug(metric)
         let op = OwlOperation(metric: slug)
-        var attrs = attributes ?? [:]
+        var attrs: [String: String?] = attributes
         attrs["tracking_id"] = op.trackingId
         info("metric:\(slug):start", attributes: attrs, file: file, function: function, line: line)
         return op
@@ -496,7 +496,7 @@ public enum Owl {
     /// with a warning logged.
     public static func recordMetric(
         _ metric: String,
-        attributes: [String: String]? = nil,
+        attributes: [String: String?] = [:],
         file: String = #file,
         function: String = #function,
         line: Int = #line
@@ -543,6 +543,15 @@ public enum Owl {
     }
 
     // MARK: - Internal
+
+    /// Filter out nil values from caller-supplied attributes so optional
+    /// strings can flow through `attributes:` without unwrapping at the call
+    /// site. Returns `nil` if nothing remains, matching the existing
+    /// "no custom attributes" path through the pipeline.
+    static func cleanAttributes(_ attributes: [String: String?]) -> [String: String]? {
+        let filtered = attributes.compactMapValues { $0 }
+        return filtered.isEmpty ? nil : filtered
+    }
 
     private static func printToConsole(
         _ message: String,

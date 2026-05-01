@@ -93,9 +93,9 @@ struct ContentView: View {
             TextField("Value", text: $customValue)
 
             Button("Record Metric") {
-                let attrs = customKey.isEmpty ? nil : [customKey: customValue]
+                let attrs: [String: String?] = customKey.isEmpty ? [:] : [customKey: customValue]
                 Owl.recordMetric("demo_custom_event", attributes: attrs)
-                appendLog("[METRIC] demo_custom_event \(attrs?.description ?? "")")
+                appendLog("[METRIC] demo_custom_event \(attrs.description)")
             }
 
             Button("Simulate Conversion") {
