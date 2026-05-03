@@ -47,7 +47,7 @@ enum EventBuilder {
             userId: userId,
             level: level,
             sourceModule: "\(fileName):\(function):\(line)",
-            message: message,
+            message: MessageTrimmer.trim(message),
             screenName: screenName,
             customAttributes: mergedAttributes.isEmpty ? nil : mergedAttributes,
             environment: deviceInfo.platform,
