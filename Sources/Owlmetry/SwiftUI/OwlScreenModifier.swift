@@ -2,7 +2,7 @@
 import SwiftUI
 
 /// A view modifier that automatically tracks screen appearances and
-/// time-on-screen. Emits `sdk:screen_appeared` (info) on appear with the
+/// time-on-screen. Emits `sdk:screen_appeared` (debug) on appear with the
 /// given `screenName`, and `sdk:screen_disappeared` (debug) on disappear with
 /// a `_duration_ms` attribute recording how long the screen was visible.
 private struct OwlScreenModifier: ViewModifier {
@@ -13,7 +13,7 @@ private struct OwlScreenModifier: ViewModifier {
         content
             .onAppear {
                 appearedAt = Date()
-                Owl.info("sdk:screen_appeared", screenName: screenName)
+                Owl.debug("sdk:screen_appeared", screenName: screenName)
             }
             .onDisappear {
                 let durationMs: String? = appearedAt.map { String(Int(Date().timeIntervalSince($0) * 1000)) }
