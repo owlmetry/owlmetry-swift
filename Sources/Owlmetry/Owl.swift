@@ -590,7 +590,7 @@ public enum Owl {
             displayMessage = message
         }
 
-        var line = "🦉 Owlmetry \(tag) \(displayMessage)"
+        var line = "🦉  \(tag) \(displayMessage)"
         if let attributes, !attributes.isEmpty {
             let pairs = attributes.sorted(by: { $0.key < $1.key }).map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
             line += " {\(pairs)}"
