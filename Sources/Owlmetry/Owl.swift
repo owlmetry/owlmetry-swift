@@ -319,6 +319,46 @@ public enum Owl {
             file: file, function: function, line: line)
     }
 
+    /// Report an error/exception value. Extracts the runtime type, NSError
+    /// domain/code, underlying-error cause chain, and the call stack into
+    /// `_error_*` reserved attributes. The server's issue tracker uses
+    /// `_error_type` as a fingerprint discriminator so different error
+    /// classes with the same wording stay on separate issues.
+    ///
+    /// Pass an optional `message` to override the auto-derived event message
+    /// with caller context (e.g. `Owl.error(err, "while loading photos")`).
+    public static func error(
+        _ error: Error,
+        _ message: String? = nil,
+        screenName: String? = nil,
+        attributes: [String: String?] = [:],
+        attachments: [OwlAttachment]? = nil,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        // Capture stack at the call site (caller is at index >=1; index 0
+        // is this method) so SDK helper frames don't pollute it.
+        let callStack = Thread.callStackSymbols
+
+        let extracted = ErrorExtraction.extract(
+            error: error,
+            userMessage: message,
+            callStack: callStack
+        )
+
+        var merged = cleanAttributes(attributes) ?? [:]
+        // SDK-owned `_error_*` keys take precedence over caller-provided
+        // values to keep fingerprinting + dashboard rendering consistent.
+        for (k, v) in extracted.attributes {
+            merged[k] = v
+        }
+
+        log(extracted.message, level: .error, screenName: screenName,
+            attributes: merged, attachments: attachments,
+            file: file, function: function, line: line)
+    }
+
     // MARK: - Funnel Steps
 
     /// Record a funnel step. Sends an info-level event with message `"step:<stepName>"`.

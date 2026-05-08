@@ -37,4 +37,22 @@ final class CustomAttributeTrimmerTests: XCTestCase {
         XCTAssertEqual(result?["short"], short)
         XCTAssertEqual(result?["long"]?.count, 200)
     }
+
+    func testErrorStackKeyKeepsLongerValueViaOverride() {
+        let stack = String(repeating: "f", count: 5000)
+        let result = CustomAttributeTrimmer.trim(["_error_stack": stack])
+        XCTAssertEqual(result?["_error_stack"]?.count, 5000)
+    }
+
+    func testErrorStackKeyTruncatesAtOverrideCap() {
+        let stack = String(repeating: "f", count: 20000)
+        let result = CustomAttributeTrimmer.trim(["_error_stack": stack])
+        XCTAssertEqual(result?["_error_stack"]?.count, 16000)
+    }
+
+    func testNonOverrideErrorKeyStillCapsAt200() {
+        let typeName = String(repeating: "T", count: 500)
+        let result = CustomAttributeTrimmer.trim(["_error_type": typeName])
+        XCTAssertEqual(result?["_error_type"]?.count, 200)
+    }
 }
