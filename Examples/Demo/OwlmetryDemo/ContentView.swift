@@ -165,18 +165,6 @@ struct ContentView: View {
                 appendLog("[STEP] first-post")
             }
             .tint(.purple)
-
-            Button("Set Experiment: onboarding=B") {
-                Owl.setExperiment("onboarding", variant: "B")
-                appendLog("[EXPERIMENT] onboarding = B")
-            }
-            .tint(.indigo)
-
-            Button("Clear Experiments") {
-                Owl.clearExperiments()
-                appendLog("[EXPERIMENT] cleared all")
-            }
-            .tint(.gray)
         }
     }
 
@@ -453,8 +441,6 @@ struct ContentView: View {
         appendLog("[BACKEND] checkout: \(checkoutResult)")
 
         // 6. Funnel demo: simulate onboarding flow
-        Owl.setExperiment("onboarding", variant: "A")
-        appendLog("[EXPERIMENT] onboarding = A")
         Owl.step("welcome-screen")
         appendLog("[STEP] welcome-screen")
         try? await Task.sleep(for: .milliseconds(300))

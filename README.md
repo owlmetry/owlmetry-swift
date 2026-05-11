@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-iOS%2016%2B%20%7C%20macOS%2013%2B-lightgrey)](./Package.swift)
 
-Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, A/B experiments, screen tracking, a drop-in user feedback view, and Apple Search Ads attribution capture. Zero external runtime dependencies.
+Native Swift SDK for iOS, iPadOS, and macOS — event logging, structured metrics, funnels, identity, screen tracking, a drop-in user feedback view, and Apple Search Ads attribution capture. Zero external runtime dependencies.
 
 Part of the [Owlmetry](https://owlmetry.com) self-hosted metrics platform.
 

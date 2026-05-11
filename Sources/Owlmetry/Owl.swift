@@ -400,26 +400,6 @@ public enum Owl {
         step(stepName, attributes: attributes, file: file, function: function, line: line)
     }
 
-    // MARK: - Experiments
-
-    /// Returns the variant assigned for the given experiment name. On the first call for a given
-    /// name, a random variant is picked from `options` and persisted to the Keychain. Subsequent
-    /// calls return the stored variant — the `options` parameter is ignored after assignment.
-    @discardableResult
-    public static func getVariant(_ name: String, options: [String]) -> String {
-        ExperimentManager.shared.getVariant(name, options: options)
-    }
-
-    /// Force a specific variant for an experiment (e.g. from a server-side assignment).
-    public static func setExperiment(_ name: String, variant: String) {
-        ExperimentManager.shared.setExperiment(name, variant: variant)
-    }
-
-    /// Reset all experiment assignments, clearing them from the Keychain.
-    public static func clearExperiments() {
-        ExperimentManager.shared.clearAll()
-    }
-
     // MARK: - User Feedback
 
     /// Submit user feedback synchronously. Returns an `OwlFeedbackReceipt` on success

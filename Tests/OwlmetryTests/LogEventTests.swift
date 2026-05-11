@@ -21,7 +21,6 @@ final class LogEventTests: XCTestCase {
             deviceModel: "iPhone16,1",
             locale: "en_US",
             isDev: true,
-            experiments: ["onboarding": "A"],
             timestamp: "2026-01-01T00:00:00.000Z"
         )
 
@@ -55,7 +54,6 @@ final class LogEventTests: XCTestCase {
             deviceModel: nil,
             locale: nil,
             isDev: false,
-            experiments: nil,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
 
@@ -86,7 +84,6 @@ final class LogEventTests: XCTestCase {
             deviceModel: nil,
             locale: nil,
             isDev: false,
-            experiments: nil,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
 
@@ -122,7 +119,6 @@ final class LogEventTests: XCTestCase {
             deviceModel: nil,
             locale: nil,
             isDev: false,
-            experiments: nil,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
         let data = try JSONEncoder().encode(event)
