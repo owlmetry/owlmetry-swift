@@ -21,7 +21,7 @@ public struct OwlConfiguration: Sendable {
         consoleLogging: Bool = true,
         attributionEnabled: Bool = true
     ) throws {
-        guard let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty else {
+        guard let bundleId = Self.resolveBundleId(), !bundleId.isEmpty else {
             throw OwlConfigurationError.missingBundleId
         }
         try self.init(
@@ -34,6 +34,22 @@ public struct OwlConfiguration: Sendable {
             consoleLogging: consoleLogging,
             attributionEnabled: attributionEnabled
         )
+    }
+
+    /// On watchOS, prefer the iOS counterpart's bundle ID (via
+    /// `WKCompanionAppBundleIdentifier` in Info.plist) so events from the
+    /// watch ingest under the same registered app as the iPhone, and direct
+    /// HTTP from cellular watches doesn't 403 on bundle_id mismatch. Falls
+    /// back to the watch's own bundle ID for standalone watch apps with no
+    /// iOS counterpart.
+    private static func resolveBundleId() -> String? {
+        #if os(watchOS)
+        if let companion = Bundle.main.object(forInfoDictionaryKey: "WKCompanionAppBundleIdentifier") as? String,
+           !companion.isEmpty {
+            return companion
+        }
+        #endif
+        return Bundle.main.bundleIdentifier
     }
 
     /// Internal initializer for testing with an explicit bundle ID.
