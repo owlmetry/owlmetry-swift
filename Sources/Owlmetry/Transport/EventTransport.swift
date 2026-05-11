@@ -85,6 +85,17 @@ actor EventTransport {
         }
     }
 
+    func enqueue(_ events: [LogEvent]) {
+        guard !events.isEmpty else { return }
+        buffer.append(contentsOf: events)
+        if buffer.count > maxBufferSize {
+            buffer.removeFirst(buffer.count - maxBufferSize)
+        }
+        if buffer.count >= batchSize {
+            Task { await flush() }
+        }
+    }
+
     func flush() async {
         let offlineEvents = await offlineQueue.drain()
         if !offlineEvents.isEmpty {
@@ -97,13 +108,13 @@ actor EventTransport {
         buffer.removeFirst(min(batchSize, buffer.count))
 
         guard networkMonitor.isConnected else {
-            await offlineQueue.enqueue(batch)
+            await handleUndelivered(batch)
             return
         }
 
         let success = await send(batch)
         if !success {
-            await offlineQueue.enqueue(batch)
+            await handleUndelivered(batch)
         }
     }
 
@@ -118,16 +129,31 @@ actor EventTransport {
             buffer.removeFirst(min(batchSize, buffer.count))
 
             guard networkMonitor.isConnected else {
-                await offlineQueue.enqueue(batch + buffer)
+                let remainder = batch + buffer
                 buffer.removeAll()
+                await handleUndelivered(remainder)
                 return
             }
 
             let success = await send(batch)
             if !success {
-                await offlineQueue.enqueue(batch)
+                await handleUndelivered(batch)
             }
         }
+    }
+
+    /// On watchOS, prefer WatchConnectivity's OS-managed queue when a
+    /// companion is reachable; otherwise (and on every other platform)
+    /// fall back to OfflineQueue.
+    private func handleUndelivered(_ batch: [LogEvent]) async {
+        guard !batch.isEmpty else { return }
+        #if os(watchOS) && canImport(WatchConnectivity)
+        if WatchConnectivityBridge.shared.canRelay {
+            WatchConnectivityBridge.shared.enqueue(batch)
+            return
+        }
+        #endif
+        await offlineQueue.enqueue(batch)
     }
 
     func persistBufferToDisk() async {

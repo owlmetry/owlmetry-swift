@@ -1,3 +1,5 @@
+// Process is macOS-only; gate so the test target builds on iOS/watchOS sims.
+#if os(macOS)
 import XCTest
 import CryptoKit
 @testable import Owlmetry
@@ -1293,3 +1295,5 @@ final class SDKIntegrationTests: XCTestCase {
         return json?["feedback"] as? [[String: Any]] ?? []
     }
 }
+
+#endif

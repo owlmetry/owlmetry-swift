@@ -19,6 +19,9 @@ public enum Owl {
         var anonymousId: String?
         var sessionId: String?
         var hasWarnedNotConfigured = false
+        // Cold-launch race: iOS may deliver a watch payload before
+        // configure() finishes. Buffered here, drained at end of configure.
+        var pendingWatchEvents: [LogEvent] = []
     }
 
     private static let state = OSAllocatedUnfairLock(initialState: State())
@@ -107,6 +110,10 @@ public enum Owl {
 
         lifecycleObserver?.start()
 
+        #if canImport(WatchConnectivity)
+        WatchConnectivityBridge.shared.activate()
+        #endif
+
         // Network request instrumentation
         #if canImport(ObjectiveC)
         if config.networkTrackingEnabled {
@@ -119,6 +126,14 @@ public enum Owl {
         Task {
             await transport.start()
             await filter.start()
+            // Drain any watch payloads delivered before configure() finished
+            // wiring up (iOS may cold-launch the host app to deliver).
+            let pending: [LogEvent] = state.withLock { s in
+                let out = s.pendingWatchEvents
+                s.pendingWatchEvents = []
+                return out
+            }
+            await transport.enqueue(pending)
         }
 
         // Idempotent startup reclaim — covers the case where a previous
@@ -544,6 +559,46 @@ public enum Owl {
         let slug = normalizeSlug(metric)
         info("metric:\(slug):record", attributes: attributes, file: file, function: function, line: line)
     }
+
+    // MARK: - watchOS Companion
+
+    #if canImport(WatchConnectivity) && !os(watchOS)
+    /// Forward a `WCSession` user-info payload into the Owlmetry pipeline.
+    /// Call this from your iPhone app's existing `WCSessionDelegate`:
+    ///
+    /// ```swift
+    /// func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+    ///     if Owl.handleWatchUserInfo(userInfo) { return }
+    ///     // ... your existing handling
+    /// }
+    /// ```
+    ///
+    /// Returns `true` when the payload was an Owlmetry envelope (decoded
+    /// and queued for ingest), `false` otherwise — let the caller continue
+    /// its own handling.
+    ///
+    /// Safe to call before `Owl.configure()`: events are buffered and
+    /// drained automatically once configuration completes.
+    @discardableResult
+    public static func handleWatchUserInfo(_ userInfo: [String: Any]) -> Bool {
+        guard let events = WatchConnectivityBridge.decodeEnvelope(userInfo) else {
+            return false
+        }
+
+        let transport: EventTransport? = state.withLock { s in
+            if let transport = s.transport {
+                return transport
+            }
+            s.pendingWatchEvents.append(contentsOf: events)
+            return nil
+        }
+
+        if let transport {
+            Task { await transport.enqueue(events) }
+        }
+        return true
+    }
+    #endif
 
     // MARK: - Lifecycle
 

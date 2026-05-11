@@ -26,6 +26,8 @@ struct DeviceInfo: Sendable {
     private static func detectPlatform() -> OwlPlatform {
         #if os(macOS)
         return .macos
+        #elseif os(watchOS)
+        return .watchos
         #else
         if ProcessInfo.processInfo.isMacCatalystApp {
             return .macos

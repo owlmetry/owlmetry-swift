@@ -1,4 +1,6 @@
-#if canImport(SwiftUI)
+// watchOS lacks .keyboardType / Material.bar; watch apps should call
+// Owl.sendFeedback() directly from their own UI.
+#if canImport(SwiftUI) && !os(watchOS)
 import SwiftUI
 
 /// Where the Submit (and Cancel) actions live.

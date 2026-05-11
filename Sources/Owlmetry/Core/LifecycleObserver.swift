@@ -1,8 +1,10 @@
 import Foundation
 import os
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 import UIKit
+#elseif os(watchOS)
+import WatchKit
 #elseif canImport(AppKit)
 import AppKit
 #endif
@@ -42,6 +44,23 @@ final class LifecycleObserver: @unchecked Sendable {
                 object: nil, queue: .main
             ) { [weak self] _ in
                 self?.handleTermination()
+            }
+        )
+        #elseif os(watchOS)
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: WKApplication.didEnterBackgroundNotification,
+                object: nil, queue: .main
+            ) { [weak self] _ in
+                self?.handleWatchBackground()
+            }
+        )
+        observers.append(
+            NotificationCenter.default.addObserver(
+                forName: WKApplication.willEnterForegroundNotification,
+                object: nil, queue: .main
+            ) { _ in
+                Owl.info("sdk:app_foregrounded")
             }
         )
         #elseif canImport(AppKit)
@@ -93,6 +112,22 @@ final class LifecycleObserver: @unchecked Sendable {
         Task {
             await self.transport.flushAll()
             application.endBackgroundTask(taskId)
+        }
+    }
+    #endif
+
+    #if os(watchOS)
+    // watchOS has no beginBackgroundTask — the OS suspends within seconds.
+    // flushAll() routes any undelivered batch through WatchConnectivity's
+    // OS-managed queue (or OfflineQueue on disk if no companion app is
+    // paired), and persistBufferToDisk() covers anything appended during
+    // the flush itself. Best-effort but durable: events already handed to
+    // WC or disk survive suspension.
+    private func handleWatchBackground() {
+        Owl.info("sdk:app_backgrounded")
+        Task {
+            await self.transport.flushAll()
+            await self.transport.persistBufferToDisk()
         }
     }
     #endif
