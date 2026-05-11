@@ -7,7 +7,9 @@ actor AttachmentUploader {
     private let ingestAttachmentURL: URL
     private let apiKey: String
     private let session: URLSession
-    private let sdkHardCapBytes: Int
+    // Int64 (not Int) because watchOS's `arm64_32` architecture has 32-bit
+    // Int, where 2 GB exceeds Int32.max by one.
+    private let sdkHardCapBytes: Int64
     private var queue: Task<Void, Never>?
     private var pending: [PendingUpload] = []
 
@@ -26,12 +28,12 @@ actor AttachmentUploader {
     private static let logger = Logger(subsystem: Owl.logSubsystem, category: "attachments")
     // Absolute SDK safety net (2 GB). Real enforcement is server-side against the
     // project's per-user and project quotas.
-    private static let defaultSdkHardCapBytes = 2 * 1024 * 1024 * 1024
+    private static let defaultSdkHardCapBytes: Int64 = 2 * 1024 * 1024 * 1024
 
     init(
         endpoint: URL,
         apiKey: String,
-        sdkHardCapBytes: Int = AttachmentUploader.defaultSdkHardCapBytes,
+        sdkHardCapBytes: Int64 = AttachmentUploader.defaultSdkHardCapBytes,
         session: URLSession = .shared
     ) {
         self.ingestAttachmentURL = endpoint.appendingPathComponent("v1/ingest/attachment")
@@ -72,7 +74,7 @@ actor AttachmentUploader {
             Self.logger.warning("Skipping empty attachment \"\(item.attachment.name)\"")
             return
         }
-        if bytes.count > sdkHardCapBytes {
+        if Int64(bytes.count) > sdkHardCapBytes {
             Self.logger.warning("Attachment \"\(item.attachment.name)\" is \(bytes.count) bytes, exceeds SDK hard cap \(self.sdkHardCapBytes). Skipping upload.")
             return
         }
