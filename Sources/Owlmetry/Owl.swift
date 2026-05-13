@@ -23,14 +23,15 @@ public enum Owl {
         // configure() finishes. Buffered here, drained at end of configure.
         var pendingWatchEvents: [LogEvent] = []
         // Count of `Owl.log(...)` Tasks that have spawned but not yet
-        // reached `EventTransport.enqueue`. setUser/setUserProperties/
-        // attribution-submit/startup-reclaim await this draining to zero
-        // before POSTing, so the claim arrives at the server only after
-        // every preceding log event has been ingested. Without this gate
-        // the claim Task could win the actor race against in-flight log
-        // Tasks (which hop DuplicateFilter actor → EventTransport actor)
-        // and POST against an empty events table — see CLAUDE.md
-        // "Identity" for the Signature Creator orphan-user bug.
+        // reached `EventTransport.enqueue`. `setUser`, `setUserProperties`,
+        // and the configure-time startup reclaim await this draining to
+        // zero before POSTing, so the claim/properties write arrives at
+        // the server only after every preceding log event has been
+        // enqueued for ingest. Without this gate the claim Task could win
+        // the actor race against in-flight log Tasks (which hop
+        // DuplicateFilter actor → EventTransport actor) and POST against
+        // an empty events table — see CLAUDE.md "Identity" for the
+        // Signature Creator orphan-user bug.
         var inFlightLogTasks: Int = 0
         var pendingLogDrains: [CheckedContinuation<Void, Never>] = []
     }

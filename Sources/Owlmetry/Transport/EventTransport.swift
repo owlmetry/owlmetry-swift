@@ -356,9 +356,11 @@ actor EventTransport {
     }
 
     /// Suspend until every in-flight ingest send has returned (HTTP response
-    /// fully received). `claimIdentity` and `setUserProperties` use this to
-    /// guarantee their POST happens after every parallel `send(_:)` started
-    /// by `enqueue`'s auto-flush, the periodic flush, or `flushAll`'s loop.
+    /// fully received). `claimIdentity` uses this after `flushAll()` to
+    /// guarantee its POST happens after every parallel `send(_:)` started
+    /// by `enqueue`'s auto-flush, the periodic flush, or `flushAll`'s loop —
+    /// otherwise the server's `UPDATE events` could run while those parallel
+    /// ingest POSTs are mid-transaction and miss their rows.
     private func awaitInFlightSends() async {
         if inFlightSendCount == 0 { return }
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
