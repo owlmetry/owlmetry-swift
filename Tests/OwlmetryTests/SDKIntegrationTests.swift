@@ -345,11 +345,79 @@ final class SDKIntegrationTests: XCTestCase {
         XCTAssertEqual(response.statusCode, 400)
     }
 
-    func testClaimRejectsNonexistentAnonymousId() async throws {
-        // Try to claim an anonymous ID with no events
+    /// Reproduction of the Signature Creator orphan bug: a burst of `Owl.log()`
+    /// calls followed *immediately* by `Owl.setUser()` (the Firebase
+    /// Anonymous Auth flow shape) must end with every event attributed to
+    /// the real user id and no orphaned anon `app_users` row.
+    ///
+    /// Without the fix in `Owl.setUser`, the claim Task can win the race to
+    /// the `EventTransport` actor while the log Tasks are still queued at
+    /// `DuplicateFilter`, the claim POSTs against an empty events table, the
+    /// server's old "no events" 404 path skips the `claimed_from` upsert, and
+    /// the late-arriving anon events orphan onto a separate row that
+    /// `resolveClaimedUserIds` can't rewrite.
+    func testRapidLogThenSetUserDoesNotOrphanEvents() async throws {
+        try Owl.configure(endpoint: Self.testEndpoint, apiKey: Self.testClientKey, bundleId: Self.testBundleId)
+
+        let runId = UUID().uuidString.prefix(8)
+        let screenName = "race_setuser_\(runId)"
+        let realId = "race-real-\(runId)"
+
+        // Capture the device's current anon id BEFORE setUser so we can
+        // assert that no events leaked under it.
+        let originalAnonId = Owl.currentUserId
+        XCTAssertNotNil(originalAnonId)
+        XCTAssertTrue(originalAnonId?.hasPrefix(IdentityManager.anonymousIdPrefix) == true)
+
+        for i in 0..<30 {
+            Owl.info("burst_\(i)", screenName: screenName)
+        }
+        // Critical: NO sleep between log and setUser. The bug is exactly
+        // that the SDK lets the claim Task race ahead of the log Tasks.
+        Owl.setUser(realId)
+        await Owl.shutdown()
+
+        // The claim Task is independent of the transport — give it time to
+        // POST + the server time to process. Poll until the assertion would
+        // hold rather than sleeping a fixed interval.
+        let allUnderRealId: () async -> Bool = {
+            do {
+                let events = try await self.queryEvents(screenName: screenName)
+                guard events.count == 30 else { return false }
+                return events.allSatisfy { ($0["user_id"] as? String) == realId }
+            } catch {
+                return false
+            }
+        }
+        var converged = false
+        for _ in 0..<40 {
+            if await allUnderRealId() { converged = true; break }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+
+        let events = try await queryEvents(screenName: screenName)
+        XCTAssertEqual(events.count, 30, "expected 30 events for screen \(screenName), got \(events.count)")
+        let underAnon = events.filter { ($0["user_id"] as? String) == originalAnonId }
+        XCTAssertTrue(underAnon.isEmpty,
+                      "\(underAnon.count) events stayed under the anon id \(originalAnonId ?? "nil") instead of being claimed for \(realId)")
+        let underReal = events.filter { ($0["user_id"] as? String) == realId }
+        XCTAssertEqual(underReal.count, 30, "expected all 30 events under \(realId)")
+        XCTAssertTrue(converged, "events did not converge to the real user id within 10s")
+    }
+
+    func testClaimWithNoEventsStillRegistersClaimedFrom() async throws {
+        // Renamed from testClaimRejectsNonexistentAnonymousId — the old
+        // contract was 404. The new contract: claim ALWAYS registers the
+        // anon→real mapping in app_users.claimed_from so a late-arriving anon
+        // event (sent by an SDK that beat its own ingest flush) gets rewritten
+        // by resolveClaimedUserIds at /v1/ingest. See CLAUDE.md "Identity"
+        // for the full reasoning.
         let fakeAnonId = "\(IdentityManager.anonymousIdPrefix)\(UUID().uuidString)"
-        let response = try await claimIdentityRaw(anonymousId: fakeAnonId, userId: "some-user")
-        XCTAssertEqual(response.statusCode, 404)
+        let realId = "noevent-claim-\(UUID().uuidString.prefix(8))"
+        let response = try await claimIdentityRaw(anonymousId: fakeAnonId, userId: realId)
+        XCTAssertEqual(response.statusCode, 200)
+        XCTAssertEqual(response.body["claimed"] as? Bool, true)
+        XCTAssertEqual(response.body["events_reassigned_count"] as? Int, 0)
     }
 
     func testClearUserRevertsToAnonymousId() async throws {

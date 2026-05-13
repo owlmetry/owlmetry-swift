@@ -24,6 +24,16 @@ actor EventTransport {
     private let maxBackoff: TimeInterval = 30
     private let compressionThreshold = 512
 
+    // In-flight `send(_:)` Tasks. `claimIdentity` waits for this counter to
+    // drain to zero before POSTing the claim — otherwise the auto-flush from
+    // `enqueue` (when buffer reaches batchSize) and `flushAll`'s loop body
+    // can have parallel /v1/ingest POSTs in flight on separate URLSession
+    // connections, and the server can process the claim's `UPDATE events`
+    // before those parallel ingests have committed → events orphan under the
+    // anon id.
+    private var inFlightSendCount: Int = 0
+    private var sendDrainContinuations: [CheckedContinuation<Void, Never>] = []
+
     private static let logger = Logger(subsystem: Owl.logSubsystem, category: "transport")
 
     init(
@@ -166,6 +176,16 @@ actor EventTransport {
     func claimIdentity(anonymousId: String, userId: String) async {
         // Flush any buffered events first so the server has them before we claim
         await flushAll()
+        // flushAll's `await send(batch)` releases the actor lock between
+        // batches, and `enqueue`'s auto-flush + the periodic flush both spawn
+        // their own flush Tasks. So even after flushAll's loop exits with an
+        // empty buffer, parallel /v1/ingest POSTs from those other Tasks may
+        // still be in flight on separate URLSession connections. Wait for
+        // them to return before POSTing the claim — otherwise the server can
+        // process our claim while ingests are mid-transaction and the
+        // claim's `UPDATE events` misses them, orphaning rows under the
+        // anon id. See CLAUDE.md "Identity" for the production bug.
+        await awaitInFlightSends()
 
         let body: [String: String] = [
             "anonymous_id": anonymousId,
@@ -323,7 +343,35 @@ actor EventTransport {
         }
 
         let request = makeRequest(url: ingestURL, body: httpBody)
+        inFlightSendCount += 1
+        defer {
+            inFlightSendCount -= 1
+            if inFlightSendCount == 0 {
+                let waiters = sendDrainContinuations
+                sendDrainContinuations = []
+                for waiter in waiters { waiter.resume() }
+            }
+        }
         return await performWithRetry(request, label: "Ingest")
+    }
+
+    /// Suspend until every in-flight ingest send has returned (HTTP response
+    /// fully received). `claimIdentity` and `setUserProperties` use this to
+    /// guarantee their POST happens after every parallel `send(_:)` started
+    /// by `enqueue`'s auto-flush, the periodic flush, or `flushAll`'s loop.
+    private func awaitInFlightSends() async {
+        if inFlightSendCount == 0 { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            // Re-check inside the actor (we're already on it, but be explicit
+            // about the invariant: by the time this closure runs, no other
+            // actor message has interleaved between the count check and the
+            // append).
+            if inFlightSendCount == 0 {
+                continuation.resume()
+            } else {
+                sendDrainContinuations.append(continuation)
+            }
+        }
     }
 
     // MARK: - Private Helpers

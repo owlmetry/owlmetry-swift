@@ -22,6 +22,17 @@ public enum Owl {
         // Cold-launch race: iOS may deliver a watch payload before
         // configure() finishes. Buffered here, drained at end of configure.
         var pendingWatchEvents: [LogEvent] = []
+        // Count of `Owl.log(...)` Tasks that have spawned but not yet
+        // reached `EventTransport.enqueue`. setUser/setUserProperties/
+        // attribution-submit/startup-reclaim await this draining to zero
+        // before POSTing, so the claim arrives at the server only after
+        // every preceding log event has been ingested. Without this gate
+        // the claim Task could win the actor race against in-flight log
+        // Tasks (which hop DuplicateFilter actor → EventTransport actor)
+        // and POST against an empty events table — see CLAUDE.md
+        // "Identity" for the Signature Creator orphan-user bug.
+        var inFlightLogTasks: Int = 0
+        var pendingLogDrains: [CheckedContinuation<Void, Never>] = []
     }
 
     private static let state = OSAllocatedUnfairLock(initialState: State())
@@ -138,8 +149,12 @@ public enum Owl {
 
         // Idempotent startup reclaim — covers the case where a previous
         // session saved a user id but the claim POST never succeeded.
+        // Same in-flight log Task gate as `setUser`: don't claim until any
+        // events emitted between configure() returning and this Task running
+        // have reached the transport buffer.
         if let savedUserId = IdentityManager.savedUserId(), savedUserId != anonId {
             Task {
+                await Self.awaitInFlightLogTasks()
                 await transport.claimIdentity(anonymousId: anonId, userId: savedUserId)
             }
         }
@@ -200,9 +215,15 @@ public enum Owl {
             return (anonId, s.transport)
         }
 
-        // Fire claim request to update previously-sent anonymous events
+        // Fire claim request to update previously-sent anonymous events.
+        // Wait for any in-flight `Owl.log(...)` Tasks to reach the transport
+        // buffer first — otherwise the claim's own `flushAll()` could see an
+        // empty buffer, POST against an empty events table on the server,
+        // and the late-arriving anon events would orphan onto a separate
+        // app_users row. See CLAUDE.md "Identity" for the full bug story.
         if let anonId, let transport {
             Task {
+                await Self.awaitInFlightLogTasks()
                 await transport.claimIdentity(anonymousId: anonId, userId: identifier)
             }
         }
@@ -239,6 +260,10 @@ public enum Owl {
         }
         guard let userId, let transport else { return }
         Task {
+            // Symmetric with setUser — let any in-flight log Tasks reach
+            // the transport before we issue the user-properties POST so the
+            // server's app_users upsert sequencing stays consistent.
+            await Self.awaitInFlightLogTasks()
             await transport.setUserProperties(userId: userId, properties: properties)
         }
     }
@@ -619,6 +644,31 @@ public enum Owl {
 
     // MARK: - Internal
 
+    /// Suspend until every in-flight `Owl.log(...)` Task has reached the
+    /// EventTransport buffer. Used by setUser, setUserProperties, the
+    /// configure-time startup reclaim, and the attribution submit path so
+    /// outbound writes that depend on prior events being ingestible never
+    /// race ahead of them.
+    ///
+    /// Returns immediately when the counter is already zero — no need to
+    /// suspend on the cooperative pool just to assert "nothing to wait for".
+    static func awaitInFlightLogTasks() async {
+        let needsWait: Bool = state.withLock { $0.inFlightLogTasks > 0 }
+        if !needsWait { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            // Re-check inside the lock to avoid a TOCTOU where the last log
+            // Task drained between our check above and appending here.
+            let resumeNow: Bool = state.withLock { s in
+                if s.inFlightLogTasks == 0 {
+                    return true
+                }
+                s.pendingLogDrains.append(continuation)
+                return false
+            }
+            if resumeNow { continuation.resume() }
+        }
+    }
+
     /// Filter out nil values from caller-supplied attributes so optional
     /// strings can flow through `attributes:` without unwrapping at the call
     /// site. Returns `nil` if nothing remains, matching the existing
@@ -728,7 +778,21 @@ public enum Owl {
 
         let clientEventId = event.clientEventId
 
+        // Bump the in-flight counter synchronously so a setUser/claim Task
+        // spawned right after this `log` call sees inFlightLogTasks > 0 and
+        // waits for us. The Task body decrements + signals waiters on exit.
+        state.withLock { $0.inFlightLogTasks += 1 }
         Task {
+            defer {
+                let waitersToResume: [CheckedContinuation<Void, Never>] = state.withLock { s in
+                    s.inFlightLogTasks -= 1
+                    guard s.inFlightLogTasks == 0 else { return [] }
+                    let pending = s.pendingLogDrains
+                    s.pendingLogDrains = []
+                    return pending
+                }
+                for waiter in waitersToResume { waiter.resume() }
+            }
             guard await duplicateFilter.shouldAllow(event) else { return }
             await transport.enqueue(event)
         }
