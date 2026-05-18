@@ -6,5 +6,5 @@ public enum OwlmetryVersion {
     /// SDK identifier sent on every event as `sdk_name`.
     public static let name = "owlmetry-swift"
     /// Semantic version of this SDK build, sent on every event as `sdk_version`.
-    public static let current = "0.8.0"
+    public static let current = "0.9.0"
 }
