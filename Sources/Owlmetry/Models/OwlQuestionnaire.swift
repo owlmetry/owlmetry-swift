@@ -2,7 +2,7 @@ import Foundation
 
 /// A complete questionnaire spec fetched from `GET /v1/questionnaires/:slug`.
 /// Public so consumers can render it manually via `OwlQuestionnaireView`.
-public struct OwlQuestionnaire: Sendable, Equatable {
+public struct OwlQuestionnaire: Sendable, Equatable, Identifiable {
     public let id: String
     public let slug: String
     public let name: String

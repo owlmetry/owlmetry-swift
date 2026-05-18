@@ -5,6 +5,17 @@ import SwiftUI
 /// + isEligible predicate against the persistent `OwlQuestionnaireState`
 /// snapshot, calls `Owl.fetchQuestionnaire(slug:)` if eligible, and presents
 /// the sheet once the spec is loaded.
+///
+/// **The sheet is attached to a hidden background subview, not the host's
+/// view tree.** SwiftUI doesn't reliably support multiple `.sheet(isPresented:)`
+/// modifiers on the same view — if a consumer already has `.sheet(...)` on the
+/// view we attach to, our presentation gets swallowed and the screen shows the
+/// host view dimmed behind nothing. Putting the sheet on a zero-size hidden
+/// `Color.clear` decouples our presentation slot from the consumer's.
+///
+/// Uses `.sheet(item: $spec)` rather than `.sheet(isPresented: $showing)` so
+/// the spec is loaded atomically with the presentation flip — no two-`@State`
+/// render race where the sheet briefly opens with `spec == nil`.
 private struct OwlQuestionnaireGate: ViewModifier {
     let slug: String
     let trigger: OwlQuestionnaireTrigger
@@ -15,34 +26,37 @@ private struct OwlQuestionnaireGate: ViewModifier {
     let onDismissed: (() -> Void)?
 
     @State private var spec: OwlQuestionnaire?
-    @State private var showing = false
     @State private var hasEvaluated = false
 
     func body(content: Content) -> some View {
         content
+            .background(sheetHost)
             .task(id: slug) { await evaluate() }
             #if canImport(UIKit)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 Task { await evaluate(force: true) }
             }
             #endif
-            .sheet(isPresented: $showing) {
-                if let spec {
-                    NavigationStack {
-                        OwlQuestionnaireView(
-                            questionnaire: spec,
-                            strings: strings,
-                            onSubmitted: onSubmitted,
-                            onCancel: { showing = false },
-                            onDismissed: onDismissed
-                        )
-                        .navigationTitle(Text(strings.title))
-                        #if !os(macOS)
-                        .navigationBarTitleDisplayMode(.inline)
-                        #endif
-                    }
-                    .applyTintIfPresent(tint)
+    }
+
+    private var sheetHost: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .sheet(item: $spec) { spec in
+                NavigationStack {
+                    OwlQuestionnaireView(
+                        questionnaire: spec,
+                        strings: strings,
+                        onSubmitted: onSubmitted,
+                        onCancel: { self.spec = nil },
+                        onDismissed: onDismissed
+                    )
+                    .navigationTitle(Text(strings.title))
+                    #if !os(macOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
                 }
+                .applyTintIfPresent(tint)
             }
     }
 
@@ -59,12 +73,9 @@ private struct OwlQuestionnaireGate: ViewModifier {
             if let questionnaire = try await Owl.fetchQuestionnaire(slug: slug) {
                 Owl.markQuestionnaireShown(slug: slug)
                 spec = questionnaire
-                showing = true
             }
         } catch {
-            // Soft-fail: log via the OS logger but don't crash the host view.
-            // Transport / server errors at trigger time are not fatal — the
-            // SDK will re-evaluate next launch or foreground.
+            // Soft-fail: trigger re-evaluates on next foreground.
         }
     }
 }
@@ -94,6 +105,9 @@ public extension View {
     ///     isEligible: { !user.isPaid }
     /// )
     /// ```
+    ///
+    /// The gate's sheet attaches to a hidden background subview, so it's safe
+    /// to stack other `.sheet(...)` modifiers on the same view tree.
     ///
     /// Use `OwlQuestionnaireView` directly for fully manual presentation.
     func owlQuestionnaire(
