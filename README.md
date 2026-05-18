@@ -121,6 +121,14 @@ try Owl.configure(
 
 See [Apple Search Ads Attribution](https://owlmetry.com/docs/sdks/swift/configuration#apple-search-ads-attribution) for the full capture → resolve → name-enrichment pipeline, retry semantics, and the `sdk:attribution_capture` debug events emitted to the dashboard.
 
+## Privacy
+
+The SDK ships an Apple-compliant `PrivacyInfo.xcprivacy` manifest. SPM merges it into your app at build time — no code, no configuration. We don't use IDFA, don't link against `AdSupport`, and never require an App Tracking Transparency prompt.
+
+On your **next** App Store submission, tick these categories under **App Store Connect → App Privacy**: Crash Data, Other Diagnostic Data, Product Interaction, Performance Data, Other User Content, and (if you call `Owl.setUser`) User ID. Subsequent submissions are unchanged.
+
+Full guide: [Privacy & App Store compliance](https://owlmetry.com/docs/sdks/swift/privacy-compliance).
+
 ## Example app
 
 [`Examples/Demo/`](./Examples/Demo/) is a SwiftUI demo that exercises the full SDK surface — screen tracking, events, metrics, funnels, feedback, and attribution. It doubles as the SDK's pre-release canary: a build failure in the demo means `main` is broken before a release cuts.
