@@ -13,7 +13,9 @@ struct ContentView: View {
     @State private var lastFeedbackId: String?
     @State private var questionnaireSlug = "demo-survey"
     @State private var questionnaireEligibleToggle = true
+    @State private var questionnaireShowsConsent = true
     @State private var showQuestionnaireManually = false
+    @State private var manualPresentationUsesConsent = true
     @State private var manualQuestionnaire: OwlQuestionnaire?
     @State private var lastQuestionnaireId: String?
     @State private var lastDismissDate: Date?
@@ -37,11 +39,15 @@ struct ContentView: View {
             .owlQuestionnaire(
                 slug: questionnaireSlug,
                 trigger: .afterLaunch,
+                showsConsent: questionnaireShowsConsent,
                 isEligible: { questionnaireEligibleToggle },
                 tint: .orange,
                 onSubmitted: { receipt in
                     lastQuestionnaireId = receipt.id
                     appendLog("[QUESTIONNAIRE] auto-modifier submitted id=\(receipt.id)")
+                },
+                onCancel: {
+                    appendLog("[QUESTIONNAIRE] auto-modifier cancelled / declined later")
                 },
                 onDismissed: {
                     appendLog("[QUESTIONNAIRE] auto-modifier dismissed globally")
@@ -52,21 +58,21 @@ struct ContentView: View {
                     NavigationStack {
                         OwlQuestionnaireView(
                             questionnaire: manualQuestionnaire,
+                            showsConsent: manualPresentationUsesConsent,
                             onSubmitted: { receipt in
                                 lastQuestionnaireId = receipt.id
                                 appendLog("[QUESTIONNAIRE] manual submitted id=\(receipt.id)")
                                 showQuestionnaireManually = false
                             },
-                            onCancel: { showQuestionnaireManually = false },
+                            onCancel: {
+                                appendLog("[QUESTIONNAIRE] manual cancelled / declined later")
+                                showQuestionnaireManually = false
+                            },
                             onDismissed: {
                                 appendLog("[QUESTIONNAIRE] manual dismissed globally")
                                 showQuestionnaireManually = false
                             }
                         )
-                        .navigationTitle("Quick survey")
-                        #if !os(macOS)
-                        .navigationBarTitleDisplayMode(.inline)
-                        #endif
                     }
                     .tint(.orange)
                 }
@@ -399,10 +405,21 @@ struct ContentView: View {
 
             Toggle("Eligible (gates auto modifier)", isOn: $questionnaireEligibleToggle)
 
+            Toggle("Auto modifier shows consent prompt", isOn: $questionnaireShowsConsent)
+
             Button {
+                manualPresentationUsesConsent = true
                 Task { await loadAndPresentQuestionnaire() }
             } label: {
-                Label("Show now (manual fetch)", systemImage: "list.bullet.clipboard")
+                Label("Show now (with consent)", systemImage: "questionmark.bubble")
+            }
+            .tint(.orange)
+
+            Button {
+                manualPresentationUsesConsent = false
+                Task { await loadAndPresentQuestionnaire() }
+            } label: {
+                Label("Show now (questions only)", systemImage: "list.bullet.clipboard")
             }
             .tint(.orange)
 

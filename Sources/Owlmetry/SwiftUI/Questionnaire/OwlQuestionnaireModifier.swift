@@ -19,10 +19,12 @@ import SwiftUI
 private struct OwlQuestionnaireGate: ViewModifier {
     let slug: String
     let trigger: OwlQuestionnaireTrigger
+    let showsConsent: Bool
     let isEligible: (() -> Bool)?
     let tint: Color?
     let strings: OwlQuestionnaireStrings
     let onSubmitted: ((OwlQuestionnaireReceipt) -> Void)?
+    let onCancel: (() -> Void)?
     let onDismissed: (() -> Void)?
 
     @State private var spec: OwlQuestionnaire?
@@ -46,15 +48,15 @@ private struct OwlQuestionnaireGate: ViewModifier {
                 NavigationStack {
                     OwlQuestionnaireView(
                         questionnaire: spec,
+                        showsConsent: showsConsent,
                         strings: strings,
                         onSubmitted: onSubmitted,
-                        onCancel: { self.spec = nil },
+                        onCancel: {
+                            onCancel?()
+                            self.spec = nil
+                        },
                         onDismissed: onDismissed
                     )
-                    .navigationTitle(Text(strings.title))
-                    #if !os(macOS)
-                    .navigationBarTitleDisplayMode(.inline)
-                    #endif
                 }
                 .applyTintIfPresent(tint)
             }
@@ -106,26 +108,37 @@ public extension View {
     /// )
     /// ```
     ///
-    /// The gate's sheet attaches to a hidden background subview, so it's safe
-    /// to stack other `.sheet(...)` modifiers on the same view tree.
+    /// The gate opens at a small "Have a minute for feedback?" detent with
+    /// three actions (take the survey, maybe later, don't ask again). It
+    /// expands to a full sheet on consent. Set `showsConsent: false` to skip
+    /// the consent prompt and go straight to the questionnaire flow.
+    ///
+    /// The sheet is non-swipe-dismissible — users exit by tapping Cancel,
+    /// finishing the flow, or choosing a consent option. The gate attaches to
+    /// a hidden background subview, so it's safe to stack other `.sheet(...)`
+    /// modifiers on the same view tree.
     ///
     /// Use `OwlQuestionnaireView` directly for fully manual presentation.
     func owlQuestionnaire(
         slug: String,
         trigger: OwlQuestionnaireTrigger = .afterLaunch,
+        showsConsent: Bool = true,
         isEligible: (() -> Bool)? = nil,
         tint: Color? = nil,
         strings: OwlQuestionnaireStrings = .default,
         onSubmitted: ((OwlQuestionnaireReceipt) -> Void)? = nil,
+        onCancel: (() -> Void)? = nil,
         onDismissed: (() -> Void)? = nil
     ) -> some View {
         modifier(OwlQuestionnaireGate(
             slug: slug,
             trigger: trigger,
+            showsConsent: showsConsent,
             isEligible: isEligible,
             tint: tint,
             strings: strings,
             onSubmitted: onSubmitted,
+            onCancel: onCancel,
             onDismissed: onDismissed
         ))
     }

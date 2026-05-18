@@ -1,6 +1,78 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "owl.questionnaire.button.back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Back" }
+        }
+      }
+    },
+    "owl.questionnaire.button.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Cancel" }
+        }
+      }
+    },
+    "owl.questionnaire.button.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Done" }
+        }
+      }
+    },
+    "owl.questionnaire.button.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Next" }
+        }
+      }
+    },
+    "owl.questionnaire.consent.accept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sure, happy to help" }
+        }
+      }
+    },
+    "owl.questionnaire.consent.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "We'd love a few minutes of your feedback to help us improve." }
+        }
+      }
+    },
+    "owl.questionnaire.consent.later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Maybe later" }
+        }
+      }
+    },
+    "owl.questionnaire.consent.never" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Don't ask again" }
+        }
+      }
+    },
+    "owl.questionnaire.consent.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Quick favor?" }
+        }
+      }
+    },
     "owl.questionnaire.dismiss" : {
       "extractionState" : "manual",
       "localizations" : {
