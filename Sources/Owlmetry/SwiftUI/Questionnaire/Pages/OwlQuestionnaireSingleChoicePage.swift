@@ -27,6 +27,7 @@ struct OwlQuestionnaireSingleChoicePage: View {
     private func choiceRow(option: OwlQuestionnaireChoiceOption) -> some View {
         let isSelected = value == option.id
         return Button {
+            OwlHaptics.tap()
             value = option.id
         } label: {
             HStack {
@@ -42,14 +43,14 @@ struct OwlQuestionnaireSingleChoicePage: View {
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.10) : Color.secondary.opacity(0.08))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
             )
-            .contentShape(Rectangle())
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])

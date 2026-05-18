@@ -37,7 +37,7 @@ public struct OwlQuestionnaireView: View {
     public init(
         questionnaire: OwlQuestionnaire,
         showsConsent: Bool = false,
-        consentIcon: Image? = Image(systemName: "sparkles"),
+        consentIcon: Image? = Image(systemName: "quote.bubble.fill"),
         strings: OwlQuestionnaireStrings = .default,
         onSubmitted: ((OwlQuestionnaireReceipt) -> Void)? = nil,
         onCancel: (() -> Void)? = nil,

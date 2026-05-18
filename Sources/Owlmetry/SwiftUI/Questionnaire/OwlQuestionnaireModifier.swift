@@ -125,7 +125,7 @@ public extension View {
         slug: String,
         trigger: OwlQuestionnaireTrigger = .afterLaunch,
         showsConsent: Bool = true,
-        consentIcon: Image? = Image(systemName: "sparkles"),
+        consentIcon: Image? = Image(systemName: "quote.bubble.fill"),
         isEligible: (() -> Bool)? = nil,
         tint: Color? = nil,
         strings: OwlQuestionnaireStrings = .default,

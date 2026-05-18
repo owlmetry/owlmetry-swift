@@ -21,8 +21,15 @@ struct OwlQuestionnaireNpsPage: View {
                         npsButton(for: score)
                     }
                 }
+                .padding(.leading, 24)
+                .padding(.trailing, 16)
                 .padding(.vertical, 4)
             }
+            // Negate the page's 24pt horizontal padding so the scroller bleeds
+            // to both screen edges. The inner HStack restores 24pt of leading
+            // padding so the first chip lines up with the rest of the page
+            // content when un-scrolled.
+            .padding(.horizontal, -24)
 
             HStack {
                 Text(lowLabel)
@@ -40,6 +47,7 @@ struct OwlQuestionnaireNpsPage: View {
     private func npsButton(for score: Int) -> some View {
         let isSelected = value == score
         return Button {
+            OwlHaptics.tap()
             value = score
         } label: {
             Text("\(score)")

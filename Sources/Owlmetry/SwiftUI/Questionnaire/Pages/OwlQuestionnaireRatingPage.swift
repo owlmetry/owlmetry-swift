@@ -28,6 +28,7 @@ struct OwlQuestionnaireRatingPage: View {
     private func starButton(for star: Int) -> some View {
         let filled = (value ?? 0) >= star
         return Button {
+            OwlHaptics.tap()
             value = star
         } label: {
             Image(systemName: filled ? "star.fill" : "star")

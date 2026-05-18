@@ -35,7 +35,10 @@ struct OwlQuestionnaireSuccessView: View {
 
             Spacer()
 
-            Button(action: onDone) {
+            Button {
+                OwlHaptics.tap()
+                onDone()
+            } label: {
                 Text(doneLabel)
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity, minHeight: 50)

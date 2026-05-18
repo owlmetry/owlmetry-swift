@@ -81,16 +81,23 @@ struct OwlQuestionnaireFlowContainer: View {
                 titleVisibility: .visible
             ) {
                 Button(role: .destructive) {
+                    OwlHaptics.tap()
                     Task { await dismissGlobally() }
                 } label: { Text(strings.doNotShowAgainConfirmAction) }
-                Button(role: .cancel) {} label: { Text(strings.doNotShowAgainCancel) }
+                Button(role: .cancel) { OwlHaptics.tap() } label: { Text(strings.doNotShowAgainCancel) }
             } message: {
                 Text(strings.doNotShowAgainConfirmMessage)
             }
     }
 
     private var detentOptions: Set<PresentationDetent> {
-        showsConsent ? [.height(Self.consentDetentHeight), .large] : [.large]
+        // Only offer the small detent during the consent phase. Once the user
+        // accepts (or we open directly into questions), lock to .large so the
+        // sheet can't be swiped back down to the consent height.
+        if case .consent = phase {
+            return [.height(Self.consentDetentHeight), .large]
+        }
+        return [.large]
     }
 
     @ViewBuilder
@@ -166,6 +173,7 @@ struct OwlQuestionnaireFlowContainer: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button {
+                    OwlHaptics.tap()
                     cancelMidFlow()
                 } label: {
                     Text(strings.cancelButton)
@@ -226,6 +234,7 @@ struct OwlQuestionnaireFlowContainer: View {
         HStack(spacing: 12) {
             if index > 0 {
                 Button {
+                    OwlHaptics.tap()
                     goBack(from: index)
                 } label: {
                     Text(strings.backButton)
@@ -237,6 +246,7 @@ struct OwlQuestionnaireFlowContainer: View {
             }
 
             Button {
+                OwlHaptics.tap()
                 if isLast {
                     Task { await submit() }
                 } else {

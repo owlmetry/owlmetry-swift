@@ -41,7 +41,10 @@ struct OwlQuestionnaireConsentView: View {
 
             Spacer(minLength: 16)
 
-            Button(action: onAccept) {
+            Button {
+                OwlHaptics.tap()
+                onAccept()
+            } label: {
                 Text(acceptLabel)
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity, minHeight: 50)
@@ -49,7 +52,10 @@ struct OwlQuestionnaireConsentView: View {
             .buttonStyle(.borderedProminent)
 
             VStack(spacing: 4) {
-                Button(action: onLater) {
+                Button {
+                    OwlHaptics.tap()
+                    onLater()
+                } label: {
                     Text(laterLabel)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -58,7 +64,10 @@ struct OwlQuestionnaireConsentView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(role: .destructive, action: onNever) {
+                Button(role: .destructive) {
+                    OwlHaptics.tap()
+                    onNever()
+                } label: {
                     Text(neverLabel)
                         .font(.callout)
                         .foregroundStyle(.red)

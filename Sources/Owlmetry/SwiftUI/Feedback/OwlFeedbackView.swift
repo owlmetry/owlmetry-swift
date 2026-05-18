@@ -110,7 +110,10 @@ public struct OwlFeedbackView: View {
                 if actionsPlacement == .toolbar, submitted == nil {
                     if onCancel != nil {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button { onCancel?() } label: {
+                            Button {
+                                OwlHaptics.tap()
+                                onCancel?()
+                            } label: {
                                 Text(strings.cancelButton)
                             }
                             .disabled(isSubmitting)
@@ -122,6 +125,7 @@ public struct OwlFeedbackView: View {
                                 ProgressView()
                             } else {
                                 Button {
+                                    OwlHaptics.tap()
                                     onSubmitTapped()
                                 } label: {
                                     Text(strings.submitButton).fontWeight(.semibold)
@@ -133,17 +137,21 @@ public struct OwlFeedbackView: View {
                 }
             }
             .alert(Text(strings.errorTitle), isPresented: errorAlertBinding, actions: {
-                Button(role: .cancel) { errorMessage = nil } label: { Text("OK") }
+                Button(role: .cancel) {
+                    OwlHaptics.tap()
+                    errorMessage = nil
+                } label: { Text("OK") }
             }, message: {
                 if let errorMessage { Text(errorMessage) } else { EmptyView() }
             })
             .alert(Text(strings.noContactAlertTitle), isPresented: $showNoContactAlert, actions: {
                 Button(role: .destructive) {
+                    OwlHaptics.tap()
                     Task { await submit() }
                 } label: {
                     Text(strings.noContactSubmitAnyway)
                 }
-                Button(role: .cancel) {} label: {
+                Button(role: .cancel) { OwlHaptics.tap() } label: {
                     Text(strings.noContactAddDetails)
                 }
             }, message: {
@@ -151,6 +159,7 @@ public struct OwlFeedbackView: View {
             })
             .alert(Text(strings.successTitle), isPresented: $showSuccessAlert, actions: {
                 Button(role: .cancel) {
+                    OwlHaptics.tap()
                     if let receipt = submitted {
                         onSubmitted?(receipt)
                     }
@@ -168,6 +177,7 @@ public struct OwlFeedbackView: View {
         if actionsPlacement == .inline, submitted == nil {
             VStack(spacing: 10) {
                 Button {
+                    OwlHaptics.tap()
                     onSubmitTapped()
                 } label: {
                     HStack(spacing: 6) {
@@ -187,7 +197,10 @@ public struct OwlFeedbackView: View {
                 .disabled(isSubmitting || !canSubmit)
 
                 if let onCancel {
-                    Button(role: .cancel) { onCancel() } label: {
+                    Button(role: .cancel) {
+                        OwlHaptics.tap()
+                        onCancel()
+                    } label: {
                         Text(strings.cancelButton)
                             .frame(maxWidth: .infinity)
                     }
