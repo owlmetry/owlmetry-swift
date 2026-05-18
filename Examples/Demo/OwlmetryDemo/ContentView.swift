@@ -11,6 +11,12 @@ struct ContentView: View {
     @State private var isRunningDemo = false
     @State private var showFeedbackSheet = false
     @State private var lastFeedbackId: String?
+    @State private var questionnaireSlug = "demo-survey"
+    @State private var questionnaireEligibleToggle = true
+    @State private var showQuestionnaireManually = false
+    @State private var manualQuestionnaire: OwlQuestionnaire?
+    @State private var lastQuestionnaireId: String?
+    @State private var lastDismissDate: Date?
 
     var body: some View {
         NavigationStack {
@@ -23,10 +29,48 @@ struct ContentView: View {
                 userPropertiesSection
                 attributionSection
                 feedbackSection
+                questionnaireSection
                 backendDemoSection
                 logOutputSection
             }
             .navigationTitle("Owlmetry Demo")
+            .owlQuestionnaire(
+                slug: questionnaireSlug,
+                trigger: .afterLaunch,
+                isEligible: { questionnaireEligibleToggle },
+                tint: .orange,
+                onSubmitted: { receipt in
+                    lastQuestionnaireId = receipt.id
+                    appendLog("[QUESTIONNAIRE] auto-modifier submitted id=\(receipt.id)")
+                },
+                onDismissed: {
+                    appendLog("[QUESTIONNAIRE] auto-modifier dismissed globally")
+                }
+            )
+            .sheet(isPresented: $showQuestionnaireManually) {
+                if let manualQuestionnaire {
+                    NavigationStack {
+                        OwlQuestionnaireView(
+                            questionnaire: manualQuestionnaire,
+                            onSubmitted: { receipt in
+                                lastQuestionnaireId = receipt.id
+                                appendLog("[QUESTIONNAIRE] manual submitted id=\(receipt.id)")
+                                showQuestionnaireManually = false
+                            },
+                            onCancel: { showQuestionnaireManually = false },
+                            onDismissed: {
+                                appendLog("[QUESTIONNAIRE] manual dismissed globally")
+                                showQuestionnaireManually = false
+                            }
+                        )
+                        .navigationTitle("Quick survey")
+                        #if !os(macOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                        #endif
+                    }
+                    .tint(.orange)
+                }
+            }
             .sheet(isPresented: $showFeedbackSheet) {
                 NavigationStack {
                     OwlFeedbackView(
@@ -342,6 +386,78 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
+        }
+    }
+
+    // MARK: - Questionnaires
+
+    private var questionnaireSection: some View {
+        Section("Questionnaires") {
+            TextField("Slug", text: $questionnaireSlug)
+                .autocorrectionDisabled()
+                .textCase(.lowercase)
+
+            Toggle("Eligible (gates auto modifier)", isOn: $questionnaireEligibleToggle)
+
+            Button {
+                Task { await loadAndPresentQuestionnaire() }
+            } label: {
+                Label("Show now (manual fetch)", systemImage: "list.bullet.clipboard")
+            }
+            .tint(.orange)
+
+            Button {
+                Task {
+                    do {
+                        let date = try await Owl.dismissQuestionnaires()
+                        lastDismissDate = date
+                        appendLog("[QUESTIONNAIRE] dismissed globally at \(date)")
+                    } catch {
+                        appendLog("[QUESTIONNAIRE] dismiss failed: \(error.localizedDescription)")
+                    }
+                }
+            } label: {
+                Label("Dismiss globally", systemImage: "bell.slash")
+            }
+            .tint(.red)
+
+            Button(role: .destructive) {
+                OwlQuestionnaireState.shared._debugReset()
+                appendLog("[QUESTIONNAIRE] persistent state cleared")
+            } label: {
+                Label("Reset persistent state (debug)", systemImage: "arrow.counterclockwise")
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Launch count: \(Owl.launchCount)")
+                Text("Foreground count: \(Owl.foregroundCount)")
+                if let first = Owl.firstLaunchAt {
+                    Text("First launch: \(first.formatted(date: .abbreviated, time: .standard))")
+                }
+                if let lastQuestionnaireId {
+                    Text("Last response: \(lastQuestionnaireId)").textSelection(.enabled)
+                }
+                if let lastDismissDate {
+                    Text("Last dismiss: \(lastDismissDate.formatted(date: .omitted, time: .standard))")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    @MainActor
+    private func loadAndPresentQuestionnaire() async {
+        do {
+            if let q = try await Owl.fetchQuestionnaire(slug: questionnaireSlug) {
+                manualQuestionnaire = q
+                showQuestionnaireManually = true
+                appendLog("[QUESTIONNAIRE] fetched slug=\(questionnaireSlug)")
+            } else {
+                appendLog("[QUESTIONNAIRE] not eligible — already responded or dismissed")
+            }
+        } catch {
+            appendLog("[QUESTIONNAIRE] fetch failed: \(error.localizedDescription)")
         }
     }
 

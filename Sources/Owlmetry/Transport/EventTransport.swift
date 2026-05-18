@@ -8,6 +8,7 @@ actor EventTransport {
     private let claimURL: URL
     private let propertiesURL: URL
     private let feedbackURL: URL
+    private let questionnaireDismissURL: URL
     private let apiKey: String
     private let bundleId: String
     private let session: URLSession
@@ -50,6 +51,7 @@ actor EventTransport {
         self.claimURL = endpoint.appendingPathComponent("v1/identity/claim")
         self.propertiesURL = endpoint.appendingPathComponent("v1/identity/properties")
         self.feedbackURL = endpoint.appendingPathComponent("v1/feedback")
+        self.questionnaireDismissURL = endpoint.appendingPathComponent("v1/questionnaires/dismiss")
         self.apiKey = apiKey
         self.bundleId = bundleId
         self.compressionEnabled = compressionEnabled
@@ -319,6 +321,142 @@ actor EventTransport {
                     let decoded = try JSONDecoder().decode(FeedbackResponseBody.self, from: data)
                     let date = Self.iso8601.date(from: decoded.created_at) ?? Date()
                     return .success(OwlFeedbackReceipt(id: decoded.id, createdAt: date))
+                } catch {
+                    return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
+                }
+            }
+            let body = String(data: data, encoding: .utf8)
+            return .failure(.serverError(statusCode: http.statusCode, body: body))
+        } catch {
+            return .failure(.transportFailure(error.localizedDescription))
+        }
+    }
+
+    private func questionnaireURL(slug: String) -> URL {
+        endpoint.appendingPathComponent("v1/questionnaires/\(slug)")
+    }
+
+    private func questionnaireResponsesURL(slug: String) -> URL {
+        endpoint.appendingPathComponent("v1/questionnaires/\(slug)/responses")
+    }
+
+    /// Fetch a questionnaire spec + eligibility envelope. Returns nil when
+    /// the user is ineligible (`already_responded`, `globally_dismissed`,
+    /// `inactive`) — the SDK treats those as "no-op silently". Throws only
+    /// for slug-not-found (404) and transport failures.
+    func fetchQuestionnaire(slug: String, userId: String?) async -> Result<OwlQuestionnaire?, OwlQuestionnaireError> {
+        var components = URLComponents(url: questionnaireURL(slug: slug), resolvingAgainstBaseURL: false)
+        var items: [URLQueryItem] = [URLQueryItem(name: "bundle_id", value: bundleId)]
+        if let userId { items.append(URLQueryItem(name: "user_id", value: userId)) }
+        components?.queryItems = items
+        guard let url = components?.url else {
+            return .failure(.transportFailure("invalid URL"))
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                return .failure(.transportFailure("no HTTP response"))
+            }
+            if http.statusCode == 404 {
+                return .failure(.slugNotFound)
+            }
+            if !(200..<300).contains(http.statusCode) {
+                let body = String(data: data, encoding: .utf8)
+                return .failure(.serverError(statusCode: http.statusCode, body: body))
+            }
+            let envelope: QuestionnaireFetchEnvelope
+            do {
+                envelope = try JSONDecoder().decode(QuestionnaireFetchEnvelope.self, from: data)
+            } catch {
+                return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
+            }
+            if envelope.eligible, let q = envelope.questionnaire {
+                return .success(q)
+            }
+            return .success(nil)
+        } catch {
+            return .failure(.transportFailure(error.localizedDescription))
+        }
+    }
+
+    func submitQuestionnaireResponse(
+        slug: String,
+        userId: String?,
+        sessionId: String?,
+        answers: [String: OwlQuestionnaireAnswerValue],
+        deviceInfo: DeviceInfo?,
+        environment: String?,
+        appVersion: String?,
+        isDev: Bool
+    ) async -> Result<OwlQuestionnaireReceipt, OwlQuestionnaireError> {
+        let payload = QuestionnaireSubmitRequestBody(
+            bundle_id: bundleId,
+            session_id: sessionId,
+            user_id: userId,
+            answers: OwlQuestionnaireAnswersWire(answers: answers),
+            app_version: appVersion,
+            sdk_name: OwlmetryVersion.name,
+            sdk_version: OwlmetryVersion.current,
+            environment: environment,
+            device_model: deviceInfo?.deviceModel,
+            os_version: deviceInfo?.osVersion,
+            is_dev: isDev
+        )
+        let httpBody: Data
+        do { httpBody = try encoder.encode(payload) }
+        catch { return .failure(.transportFailure("encoding failed: \(error.localizedDescription)")) }
+
+        let request = makeRequest(url: questionnaireResponsesURL(slug: slug), body: httpBody)
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                return .failure(.transportFailure("no HTTP response"))
+            }
+            if (200..<300).contains(http.statusCode) {
+                do {
+                    let decoded = try JSONDecoder().decode(QuestionnaireSubmitResponseBody.self, from: data)
+                    let date = Self.iso8601.date(from: decoded.created_at) ?? Date()
+                    return .success(OwlQuestionnaireReceipt(id: decoded.id, createdAt: date))
+                } catch {
+                    return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
+                }
+            }
+            if http.statusCode == 400 {
+                let body = String(data: data, encoding: .utf8)
+                return .failure(.invalidAnswers(body ?? "unknown"))
+            }
+            if http.statusCode == 404 {
+                return .failure(.slugNotFound)
+            }
+            let body = String(data: data, encoding: .utf8)
+            return .failure(.serverError(statusCode: http.statusCode, body: body))
+        } catch {
+            return .failure(.transportFailure(error.localizedDescription))
+        }
+    }
+
+    func submitQuestionnaireDismiss(userId: String) async -> Result<Date, OwlQuestionnaireError> {
+        let payload = QuestionnaireDismissRequestBody(bundle_id: bundleId, user_id: userId)
+        let httpBody: Data
+        do { httpBody = try encoder.encode(payload) }
+        catch { return .failure(.transportFailure("encoding failed: \(error.localizedDescription)")) }
+
+        let request = makeRequest(url: questionnaireDismissURL, body: httpBody)
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                return .failure(.transportFailure("no HTTP response"))
+            }
+            if (200..<300).contains(http.statusCode) {
+                do {
+                    let decoded = try JSONDecoder().decode(QuestionnaireDismissResponseBody.self, from: data)
+                    return .success(Self.iso8601.date(from: decoded.dismissed_at) ?? Date())
                 } catch {
                     return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
                 }

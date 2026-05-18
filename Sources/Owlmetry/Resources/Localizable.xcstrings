@@ -1,6 +1,150 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "owl.questionnaire.dismiss" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Don't show again" }
+        }
+      }
+    },
+    "owl.questionnaire.dismiss.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Keep showing" }
+        }
+      }
+    },
+    "owl.questionnaire.dismiss.confirm.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Don't show again" }
+        }
+      }
+    },
+    "owl.questionnaire.dismiss.confirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "We won't ask you to fill in another questionnaire." }
+        }
+      }
+    },
+    "owl.questionnaire.dismiss.confirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Don't show questionnaires?" }
+        }
+      }
+    },
+    "owl.questionnaire.error.generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Something went wrong. Please try again." }
+        }
+      }
+    },
+    "owl.questionnaire.error.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Please answer the required questions." }
+        }
+      }
+    },
+    "owl.questionnaire.error.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Couldn't send response" }
+        }
+      }
+    },
+    "owl.questionnaire.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Loading…" }
+        }
+      }
+    },
+    "owl.questionnaire.nps.high" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Extremely likely" }
+        }
+      }
+    },
+    "owl.questionnaire.nps.low" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not at all likely" }
+        }
+      }
+    },
+    "owl.questionnaire.required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Required" }
+        }
+      }
+    },
+    "owl.questionnaire.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not now" }
+        }
+      }
+    },
+    "owl.questionnaire.submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Submit" }
+        }
+      }
+    },
+    "owl.questionnaire.submitting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sending…" }
+        }
+      }
+    },
+    "owl.questionnaire.success.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your answers help us improve." }
+        }
+      }
+    },
+    "owl.questionnaire.success.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thanks!" }
+        }
+      }
+    },
+    "owl.questionnaire.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Quick survey" }
+        }
+      }
+    },
     "owl.feedback.cancel" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -35,6 +35,7 @@ final class LifecycleObserver: @unchecked Sendable {
                 forName: UIApplication.willEnterForegroundNotification,
                 object: nil, queue: .main
             ) { _ in
+                OwlQuestionnaireState.shared.incrementForeground()
                 Owl.info("sdk:app_foregrounded")
             }
         )
@@ -60,6 +61,7 @@ final class LifecycleObserver: @unchecked Sendable {
                 forName: WKApplication.willEnterForegroundNotification,
                 object: nil, queue: .main
             ) { _ in
+                OwlQuestionnaireState.shared.incrementForeground()
                 Owl.info("sdk:app_foregrounded")
             }
         )
@@ -69,6 +71,7 @@ final class LifecycleObserver: @unchecked Sendable {
                 forName: NSApplication.didBecomeActiveNotification,
                 object: nil, queue: .main
             ) { _ in
+                OwlQuestionnaireState.shared.incrementForeground()
                 Owl.info("sdk:app_foregrounded")
             }
         )

@@ -186,6 +186,10 @@ public enum Owl {
         }
         log("sdk:session_started", level: .info, screenName: nil, attributes: sessionAttributes,
             file: #file, function: #function, line: #line)
+
+        // Bump the per-install launch counter once per process. Drives the
+        // `.owlQuestionnaire(...)` trigger conditions.
+        OwlQuestionnaireState.shared.markConfiguredOnce()
     }
 
     // MARK: - Session
@@ -504,6 +508,125 @@ public enum Owl {
             return receipt
         case .failure(let error):
             throw error
+        }
+    }
+
+    // MARK: - Questionnaires
+
+    /// Total number of times `Owl.configure(...)` has completed since install.
+    public static var launchCount: Int { OwlQuestionnaireState.shared.launchCount }
+    /// Total number of foreground transitions since install.
+    public static var foregroundCount: Int { OwlQuestionnaireState.shared.foregroundCount }
+    /// Timestamp of the first-ever `Owl.configure(...)` on this install.
+    public static var firstLaunchAt: Date? { OwlQuestionnaireState.shared.firstLaunchAt }
+
+    /// Fetch a questionnaire by slug. Returns `nil` when the user is ineligible
+    /// (already responded, globally dismissed, or the questionnaire is inactive).
+    /// Throws on slug-not-found or transport / server errors.
+    public static func fetchQuestionnaire(slug: String) async throws -> OwlQuestionnaire? {
+        let snapshot = transportSnapshot()
+        guard let snapshot else { throw OwlQuestionnaireError.notConfigured }
+        let result = await snapshot.transport.fetchQuestionnaire(slug: slug, userId: snapshot.userId)
+        switch result {
+        case .success(let q): return q
+        case .failure(let err): throw err
+        }
+    }
+
+    /// Submit a completed response. Answers are validated against the
+    /// questionnaire's current schema on the server. Returns a receipt with
+    /// the response id and server timestamp.
+    public static func submitQuestionnaireResponse(
+        slug: String,
+        answers: [String: OwlQuestionnaireAnswerValue]
+    ) async throws -> OwlQuestionnaireReceipt {
+        let snapshot = transportSnapshot()
+        guard let snapshot else { throw OwlQuestionnaireError.notConfigured }
+
+        #if DEBUG
+        let isDev = true
+        #else
+        let isDev = false
+        #endif
+
+        let result = await snapshot.transport.submitQuestionnaireResponse(
+            slug: slug,
+            userId: snapshot.userId,
+            sessionId: snapshot.sessionId,
+            answers: answers,
+            deviceInfo: snapshot.deviceInfo,
+            environment: snapshot.deviceInfo.platform.rawValue,
+            appVersion: snapshot.deviceInfo.appVersion,
+            isDev: isDev
+        )
+        switch result {
+        case .success(let receipt):
+            log("sdk:questionnaire_submitted", level: .info, screenName: nil,
+                attributes: ["slug": slug],
+                file: #file, function: #function, line: #line)
+            return receipt
+        case .failure(let err):
+            throw err
+        }
+    }
+
+    /// Globally opt the current user out of every questionnaire. Idempotent.
+    /// Survives reinstall (stored in `app_users.properties` server-side).
+    @discardableResult
+    public static func dismissQuestionnaires() async throws -> Date {
+        let snapshot = transportSnapshot()
+        guard let snapshot, let userId = snapshot.userId else {
+            throw OwlQuestionnaireError.notConfigured
+        }
+        let result = await snapshot.transport.submitQuestionnaireDismiss(userId: userId)
+        switch result {
+        case .success(let date):
+            log("sdk:questionnaire_dismissed", level: .info, screenName: nil, attributes: nil,
+                file: #file, function: #function, line: #line)
+            return date
+        case .failure(let err): throw err
+        }
+    }
+
+    // Process-local dedupe so a single launch doesn't re-present the same slug
+    // even if the gate's `.task` is re-entered or two view modifiers with the
+    // same slug both fire. Cross-launch dedupe is the server's job.
+    private static let shownLock = NSLock()
+    nonisolated(unsafe) private static var shownSlugs = Set<String>()
+
+    static func questionnaireWasShownThisProcess(slug: String) -> Bool {
+        shownLock.lock(); defer { shownLock.unlock() }
+        return shownSlugs.contains(slug)
+    }
+
+    static func markQuestionnaireShown(slug: String) {
+        shownLock.lock(); defer { shownLock.unlock() }
+        shownSlugs.insert(slug)
+    }
+
+    private struct TransportSnapshot {
+        let transport: EventTransport
+        let userId: String?
+        let sessionId: String?
+        let deviceInfo: DeviceInfo
+    }
+
+    private static func transportSnapshot() -> TransportSnapshot? {
+        state.withLock { s -> TransportSnapshot? in
+            guard let transport = s.transport,
+                  let deviceInfo = s.deviceInfo else {
+                if !s.hasWarnedNotConfigured {
+                    s.hasWarnedNotConfigured = true
+                    logger.warning("Owl.configure() has not been called. Questionnaire call dropped.")
+                }
+                return nil
+            }
+            return TransportSnapshot(
+                transport: transport,
+                userId: s.defaultUserId,
+                sessionId: s.sessionId,
+                deviceInfo: deviceInfo
+            )
         }
     }
 
