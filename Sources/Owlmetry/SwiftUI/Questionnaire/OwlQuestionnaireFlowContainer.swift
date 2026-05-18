@@ -23,6 +23,7 @@ enum OwlQuestionnairePhase: Equatable {
 struct OwlQuestionnaireFlowContainer: View {
     let questionnaire: OwlQuestionnaire
     let showsConsent: Bool
+    let consentIcon: Image?
     let strings: OwlQuestionnaireStrings
     let onSubmitted: ((OwlQuestionnaireReceipt) -> Void)?
     let onCancel: (() -> Void)?
@@ -47,6 +48,7 @@ struct OwlQuestionnaireFlowContainer: View {
     init(
         questionnaire: OwlQuestionnaire,
         showsConsent: Bool,
+        consentIcon: Image?,
         strings: OwlQuestionnaireStrings,
         onSubmitted: ((OwlQuestionnaireReceipt) -> Void)? = nil,
         onCancel: (() -> Void)? = nil,
@@ -54,6 +56,7 @@ struct OwlQuestionnaireFlowContainer: View {
     ) {
         self.questionnaire = questionnaire
         self.showsConsent = showsConsent
+        self.consentIcon = consentIcon
         self.strings = strings
         self.onSubmitted = onSubmitted
         self.onCancel = onCancel
@@ -95,6 +98,7 @@ struct OwlQuestionnaireFlowContainer: View {
         switch phase {
         case .consent:
             OwlQuestionnaireConsentView(
+                icon: consentIcon,
                 title: strings.consentTitle,
                 message: consentBodyText,
                 acceptLabel: strings.consentAccept,

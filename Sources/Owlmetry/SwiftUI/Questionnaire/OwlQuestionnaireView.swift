@@ -28,6 +28,7 @@ import SwiftUI
 public struct OwlQuestionnaireView: View {
     private let questionnaire: OwlQuestionnaire
     private let showsConsent: Bool
+    private let consentIcon: Image?
     private let strings: OwlQuestionnaireStrings
     private let onSubmitted: ((OwlQuestionnaireReceipt) -> Void)?
     private let onCancel: (() -> Void)?
@@ -36,6 +37,7 @@ public struct OwlQuestionnaireView: View {
     public init(
         questionnaire: OwlQuestionnaire,
         showsConsent: Bool = false,
+        consentIcon: Image? = Image(systemName: "sparkles"),
         strings: OwlQuestionnaireStrings = .default,
         onSubmitted: ((OwlQuestionnaireReceipt) -> Void)? = nil,
         onCancel: (() -> Void)? = nil,
@@ -43,6 +45,7 @@ public struct OwlQuestionnaireView: View {
     ) {
         self.questionnaire = questionnaire
         self.showsConsent = showsConsent
+        self.consentIcon = consentIcon
         self.strings = strings
         self.onSubmitted = onSubmitted
         self.onCancel = onCancel
@@ -53,6 +56,7 @@ public struct OwlQuestionnaireView: View {
         OwlQuestionnaireFlowContainer(
             questionnaire: questionnaire,
             showsConsent: showsConsent,
+            consentIcon: consentIcon,
             strings: strings,
             onSubmitted: onSubmitted,
             onCancel: onCancel,

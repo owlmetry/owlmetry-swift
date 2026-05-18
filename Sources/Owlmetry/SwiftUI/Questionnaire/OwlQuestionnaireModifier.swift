@@ -20,6 +20,7 @@ private struct OwlQuestionnaireGate: ViewModifier {
     let slug: String
     let trigger: OwlQuestionnaireTrigger
     let showsConsent: Bool
+    let consentIcon: Image?
     let isEligible: (() -> Bool)?
     let tint: Color?
     let strings: OwlQuestionnaireStrings
@@ -49,6 +50,7 @@ private struct OwlQuestionnaireGate: ViewModifier {
                     OwlQuestionnaireView(
                         questionnaire: spec,
                         showsConsent: showsConsent,
+                        consentIcon: consentIcon,
                         strings: strings,
                         onSubmitted: onSubmitted,
                         onCancel: {
@@ -123,6 +125,7 @@ public extension View {
         slug: String,
         trigger: OwlQuestionnaireTrigger = .afterLaunch,
         showsConsent: Bool = true,
+        consentIcon: Image? = Image(systemName: "sparkles"),
         isEligible: (() -> Bool)? = nil,
         tint: Color? = nil,
         strings: OwlQuestionnaireStrings = .default,
@@ -134,6 +137,7 @@ public extension View {
             slug: slug,
             trigger: trigger,
             showsConsent: showsConsent,
+            consentIcon: consentIcon,
             isEligible: isEligible,
             tint: tint,
             strings: strings,
