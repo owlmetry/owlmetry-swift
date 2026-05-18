@@ -440,9 +440,14 @@ struct ContentView: View {
 
             Button(role: .destructive) {
                 OwlQuestionnaireState.shared._debugReset()
-                appendLog("[QUESTIONNAIRE] persistent state cleared")
+                Owl._debugClearShownQuestionnaires()
+                Owl.clearUser(newAnonymousId: true)
+                lastQuestionnaireId = nil
+                lastDismissDate = nil
+                appendLog("[QUESTIONNAIRE] full reset — fresh anon ID, counters cleared, in-process cache cleared")
+                appendLog("→ tap a \"Show now\" button, or background + foreground the app to re-fire the auto-trigger")
             } label: {
-                Label("Reset persistent state (debug)", systemImage: "arrow.counterclockwise")
+                Label("Reset everything for fresh test", systemImage: "arrow.counterclockwise")
             }
 
             VStack(alignment: .leading, spacing: 4) {

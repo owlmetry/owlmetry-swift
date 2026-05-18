@@ -604,6 +604,16 @@ public enum Owl {
         shownSlugs.insert(slug)
     }
 
+    /// Debug-only — clears the in-process "already shown this slug" cache so
+    /// `.owlQuestionnaire(...)` can re-evaluate the trigger without an app
+    /// relaunch. Intended for QA and demo apps. Server-side eligibility
+    /// (already-responded, globally-dismissed) is NOT affected — combine with
+    /// `Owl.clearUser(newAnonymousId: true)` to test against a fresh user.
+    public static func _debugClearShownQuestionnaires() {
+        shownLock.lock(); defer { shownLock.unlock() }
+        shownSlugs.removeAll()
+    }
+
     private struct TransportSnapshot {
         let transport: EventTransport
         let userId: String?
