@@ -11,7 +11,7 @@ struct ContentView: View {
     @State private var isRunningDemo = false
     @State private var showFeedbackSheet = false
     @State private var lastFeedbackId: String?
-    @State private var questionnaireSlug = "demo-survey"
+    @State private var questionnaireSlug = "dev-demo-survey"
     @State private var questionnaireEligibleToggle = true
     @State private var questionnaireShowsConsent = true
     @State private var showQuestionnaireManually = false

@@ -17,8 +17,12 @@ struct OwlQuestionnaireTextPage: View {
                 )
 
                 if question.multiline {
+                    // Hide TextEditor's built-in white background so the outer
+                    // rounded fill is the only visible surface — matches the
+                    // single-line TextField branch below.
                     TextEditor(text: $value)
                         .focused($isFocused)
+                        .scrollContentBackground(.hidden)
                         .frame(minHeight: 160)
                         .padding(12)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.08)))
