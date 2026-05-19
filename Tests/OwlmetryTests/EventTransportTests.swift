@@ -44,6 +44,42 @@ final class EventTransportTests: XCTestCase {
         }
     }
 
+    func testFetchQuestionnaireOmitsForceWhenFalse() async {
+        var receivedURL: URL?
+        MockURLProtocol.handler = { request in
+            receivedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            let body = #"{"eligible":false,"reason":"inactive"}"#.data(using: .utf8)!
+            return (response, body)
+        }
+
+        let transport = makeTransport()
+        _ = await transport.fetchQuestionnaire(slug: "preview-slug", userId: "user_42", force: false)
+
+        XCTAssertNotNil(receivedURL)
+        let items = receivedURL.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
+        XCTAssertEqual(items.first(where: { $0.name == "bundle_id" })?.value, "com.owlmetry.test")
+        XCTAssertEqual(items.first(where: { $0.name == "user_id" })?.value, "user_42")
+        XCTAssertNil(items.first(where: { $0.name == "force" }))
+    }
+
+    func testFetchQuestionnaireAppendsForceQueryParamWhenTrue() async {
+        var receivedURL: URL?
+        MockURLProtocol.handler = { request in
+            receivedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            let body = #"{"eligible":false,"reason":"inactive"}"#.data(using: .utf8)!
+            return (response, body)
+        }
+
+        let transport = makeTransport()
+        _ = await transport.fetchQuestionnaire(slug: "preview-slug", userId: "user_42", force: true)
+
+        XCTAssertNotNil(receivedURL)
+        let items = receivedURL.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
+        XCTAssertEqual(items.first(where: { $0.name == "force" })?.value, "true")
+    }
+
     func testAuthorizationHeaderSet() async {
         var receivedAuth: String?
         MockURLProtocol.handler = { request in

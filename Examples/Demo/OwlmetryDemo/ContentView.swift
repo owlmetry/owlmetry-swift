@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var questionnaireSlug = "dev-demo-survey"
     @State private var questionnaireEligibleToggle = true
     @State private var questionnaireShowsConsent = true
+    @State private var questionnaireForceShow = false
     @State private var showQuestionnaireManually = false
     @State private var manualPresentationUsesConsent = true
     @State private var manualQuestionnaire: OwlQuestionnaire?
@@ -42,6 +43,7 @@ struct ContentView: View {
                 trigger: .afterLaunch,
                 showsConsent: questionnaireShowsConsent,
                 isEligible: { questionnaireEligibleToggle },
+                forceShow: questionnaireForceShow,
                 tint: .orange,
                 onSubmitted: { receipt in
                     lastQuestionnaireId = receipt.id
@@ -410,6 +412,8 @@ struct ContentView: View {
             Toggle("Eligible (gates auto modifier)", isOn: $questionnaireEligibleToggle)
 
             Toggle("Auto modifier shows consent prompt", isOn: $questionnaireShowsConsent)
+
+            Toggle("Force show (bypass triggers, already-responded, dismissed)", isOn: $questionnaireForceShow)
 
             Button {
                 manualPresentationUsesConsent = true

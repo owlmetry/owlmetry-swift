@@ -22,6 +22,7 @@ private struct OwlQuestionnaireGate: ViewModifier {
     let showsConsent: Bool
     let consentIcon: Image?
     let isEligible: (() -> Bool)?
+    let forceShow: Bool
     let tint: Color?
     let strings: OwlQuestionnaireStrings
     let onSubmitted: ((OwlQuestionnaireReceipt) -> Void)?
@@ -43,7 +44,10 @@ private struct OwlQuestionnaireGate: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(sheetHost)
-            .task(id: slug) { await evaluate() }
+            // Task id folds in forceShow so toggling the debug flag at runtime
+            // (e.g., from a debug menu) re-fires evaluation instead of waiting
+            // for a slug change or foreground transition.
+            .task(id: "\(slug)|\(forceShow)") { await evaluate() }
             #if canImport(UIKit)
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 Task { await evaluate(force: true) }
@@ -79,17 +83,30 @@ private struct OwlQuestionnaireGate: ViewModifier {
 
     @MainActor
     private func evaluate(force: Bool = false) async {
-        if !force, hasEvaluated { return }
+        // forceShow bypasses every local gate (per-process dedup, manual
+        // trigger, condition checks, isEligible closure) and asks the server
+        // to ignore already-responded / globally-dismissed too. Intended for
+        // previewing the UI in debug builds — wrap it in `#if DEBUG` or wire
+        // it to a debug-menu toggle in your app.
+        if !forceShow {
+            if !force, hasEvaluated { return }
+        }
         hasEvaluated = true
-        if Owl.questionnaireWasShownThisProcess(slug: slug) { return }
-        if trigger.isManual { return }
-        let snapshot = OwlQuestionnaireState.shared.snapshot()
-        guard trigger.isSatisfied(state: snapshot) else { return }
-        if let isEligible, isEligible() == false { return }
+        if !forceShow {
+            if Owl.questionnaireWasShownThisProcess(slug: slug) { return }
+            if trigger.isManual { return }
+            let snapshot = OwlQuestionnaireState.shared.snapshot()
+            guard trigger.isSatisfied(state: snapshot) else { return }
+            if let isEligible, isEligible() == false { return }
+        }
         do {
-            let result = try await Owl.fetchQuestionnaire(slug: slug)
+            let result = try await Owl.fetchQuestionnaire(slug: slug, force: forceShow)
             if let questionnaire = result.questionnaire {
-                Owl.markQuestionnaireShown(slug: slug)
+                // Skip the per-process "shown" mark under forceShow so the
+                // debug toggle stays re-presentable across dismiss cycles.
+                if !forceShow {
+                    Owl.markQuestionnaireShown(slug: slug)
+                }
                 payload = PresentationPayload(
                     questionnaire: questionnaire,
                     inProgress: result.inProgress
@@ -138,12 +155,20 @@ public extension View {
     /// modifiers on the same view tree.
     ///
     /// Use `OwlQuestionnaireView` directly for fully manual presentation.
+    ///
+    /// Set `forceShow: true` to bypass every local gate (trigger conditions,
+    /// `isEligible`, per-process dedup) and ask the server to also ignore
+    /// `alreadyResponded` and `globallyDismissed`. `inactive` is still
+    /// respected. Intended for previewing the questionnaire UI in debug
+    /// builds — gate it yourself with `#if DEBUG` or a debug-menu toggle so
+    /// production users never trip it.
     func owlQuestionnaire(
         slug: String,
         trigger: OwlQuestionnaireTrigger = .afterLaunch,
         showsConsent: Bool = true,
         consentIcon: Image? = Image(systemName: "quote.bubble.fill"),
         isEligible: (() -> Bool)? = nil,
+        forceShow: Bool = false,
         tint: Color? = nil,
         strings: OwlQuestionnaireStrings = .default,
         onSubmitted: ((OwlQuestionnaireReceipt) -> Void)? = nil,
@@ -156,6 +181,7 @@ public extension View {
             showsConsent: showsConsent,
             consentIcon: consentIcon,
             isEligible: isEligible,
+            forceShow: forceShow,
             tint: tint,
             strings: strings,
             onSubmitted: onSubmitted,

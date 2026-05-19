@@ -347,10 +347,11 @@ actor EventTransport {
     /// reason is surfaced for diagnostics but the SDK still treats
     /// already_responded / globally_dismissed / inactive as silent no-ops.
     /// Throws only for slug-not-found (404) and transport failures.
-    func fetchQuestionnaire(slug: String, userId: String?) async -> Result<OwlQuestionnaireFetchResult, OwlQuestionnaireError> {
+    func fetchQuestionnaire(slug: String, userId: String?, force: Bool = false) async -> Result<OwlQuestionnaireFetchResult, OwlQuestionnaireError> {
         var components = URLComponents(url: questionnaireURL(slug: slug), resolvingAgainstBaseURL: false)
         var items: [URLQueryItem] = [URLQueryItem(name: "bundle_id", value: bundleId)]
         if let userId { items.append(URLQueryItem(name: "user_id", value: userId)) }
+        if force { items.append(URLQueryItem(name: "force", value: "true")) }
         components?.queryItems = items
         guard let url = components?.url else {
             return .failure(.transportFailure("invalid URL"))

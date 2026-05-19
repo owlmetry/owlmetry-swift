@@ -525,10 +525,15 @@ public enum Owl {
     /// ineligible (already responded, globally dismissed, or the
     /// questionnaire is inactive — in that case `.ineligibleReason` is set).
     /// Throws on slug-not-found or transport / server errors.
-    public static func fetchQuestionnaire(slug: String) async throws -> OwlQuestionnaireFetchResult {
+    ///
+    /// Pass `force: true` to ask the server to ignore `alreadyResponded` and
+    /// `globallyDismissed` — useful for previewing the questionnaire UI in
+    /// debug builds without resetting state. `inactive` is still respected
+    /// (no spec to return for a paused questionnaire).
+    public static func fetchQuestionnaire(slug: String, force: Bool = false) async throws -> OwlQuestionnaireFetchResult {
         let snapshot = transportSnapshot()
         guard let snapshot else { throw OwlQuestionnaireError.notConfigured }
-        let result = await snapshot.transport.fetchQuestionnaire(slug: slug, userId: snapshot.userId)
+        let result = await snapshot.transport.fetchQuestionnaire(slug: slug, userId: snapshot.userId, force: force)
         switch result {
         case .success(let res): return res
         case .failure(let err): throw err
