@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showQuestionnaireManually = false
     @State private var manualPresentationUsesConsent = true
     @State private var manualQuestionnaire: OwlQuestionnaire?
+    @State private var manualQuestionnaireInProgress: OwlQuestionnaireDraft?
     @State private var lastQuestionnaireId: String?
     @State private var lastDismissDate: Date?
 
@@ -58,7 +59,10 @@ struct ContentView: View {
                     NavigationStack {
                         OwlQuestionnaireView(
                             questionnaire: manualQuestionnaire,
-                            showsConsent: manualPresentationUsesConsent,
+                            inProgress: manualQuestionnaireInProgress,
+                            // Skip consent when resuming a draft — the user
+                            // already opted in earlier.
+                            showsConsent: manualPresentationUsesConsent && manualQuestionnaireInProgress == nil,
                             onSubmitted: { receipt in
                                 lastQuestionnaireId = receipt.id
                                 appendLog("[QUESTIONNAIRE] manual submitted id=\(receipt.id)")
@@ -471,12 +475,19 @@ struct ContentView: View {
     @MainActor
     private func loadAndPresentQuestionnaire() async {
         do {
-            if let q = try await Owl.fetchQuestionnaire(slug: questionnaireSlug) {
+            let result = try await Owl.fetchQuestionnaire(slug: questionnaireSlug)
+            if let q = result.questionnaire {
                 manualQuestionnaire = q
+                manualQuestionnaireInProgress = result.inProgress
                 showQuestionnaireManually = true
-                appendLog("[QUESTIONNAIRE] fetched slug=\(questionnaireSlug)")
+                if let draft = result.inProgress {
+                    appendLog("[QUESTIONNAIRE] resumed slug=\(questionnaireSlug) responseId=\(draft.responseId) answered=\(draft.answers.count)")
+                } else {
+                    appendLog("[QUESTIONNAIRE] fetched slug=\(questionnaireSlug)")
+                }
             } else {
-                appendLog("[QUESTIONNAIRE] not eligible — already responded or dismissed")
+                let reason = result.ineligibleReason?.rawValue ?? "unknown"
+                appendLog("[QUESTIONNAIRE] not eligible — reason=\(reason)")
             }
         } catch {
             appendLog("[QUESTIONNAIRE] fetch failed: \(error.localizedDescription)")

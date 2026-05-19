@@ -340,11 +340,14 @@ actor EventTransport {
         endpoint.appendingPathComponent("v1/questionnaires/\(slug)/responses")
     }
 
-    /// Fetch a questionnaire spec + eligibility envelope. Returns nil when
-    /// the user is ineligible (`already_responded`, `globally_dismissed`,
-    /// `inactive`) — the SDK treats those as "no-op silently". Throws only
-    /// for slug-not-found (404) and transport failures.
-    func fetchQuestionnaire(slug: String, userId: String?) async -> Result<OwlQuestionnaire?, OwlQuestionnaireError> {
+    /// Fetch a questionnaire spec + eligibility envelope. The success branch
+    /// carries the spec (nil when the user is ineligible) plus, on eligible
+    /// returns, any in-progress draft from a previous session so the flow
+    /// container can pre-fill its answer store and resume. The ineligibility
+    /// reason is surfaced for diagnostics but the SDK still treats
+    /// already_responded / globally_dismissed / inactive as silent no-ops.
+    /// Throws only for slug-not-found (404) and transport failures.
+    func fetchQuestionnaire(slug: String, userId: String?) async -> Result<OwlQuestionnaireFetchResult, OwlQuestionnaireError> {
         var components = URLComponents(url: questionnaireURL(slug: slug), resolvingAgainstBaseURL: false)
         var items: [URLQueryItem] = [URLQueryItem(name: "bundle_id", value: bundleId)]
         if let userId { items.append(URLQueryItem(name: "user_id", value: userId)) }
@@ -377,19 +380,35 @@ actor EventTransport {
                 return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
             }
             if envelope.eligible, let q = envelope.questionnaire {
-                return .success(q)
+                let draft = envelope.in_progress.map { body in
+                    OwlQuestionnaireDraft(
+                        responseId: body.response_id,
+                        answers: hydrateDraftAnswers(body.answers, against: q.schema)
+                    )
+                }
+                return .success(OwlQuestionnaireFetchResult(questionnaire: q, inProgress: draft))
             }
-            return .success(nil)
+            // Ineligible — surface the reason for diagnostics so callers can
+            // log or branch on it without parsing the raw envelope.
+            let reason = envelope.reason.flatMap(OwlQuestionnaireIneligibleReason.init(rawValue:))
+            return .success(OwlQuestionnaireFetchResult(questionnaire: nil, ineligibleReason: reason))
         } catch {
             return .failure(.transportFailure(error.localizedDescription))
         }
     }
 
-    func submitQuestionnaireResponse(
+    /// Save a draft (`isComplete: false`) or finalize a submission
+    /// (`isComplete: true`). The server upserts by `(project, slug, user_id)`
+    /// — the SDK is stateless across calls and doesn't track the response
+    /// id. `receipt.wasSubmitted` is `true` exactly once per response (on
+    /// the call that flipped `submitted_at` null → non-null) and is what the
+    /// flow container uses to transition into the success phase.
+    func saveQuestionnaireResponse(
         slug: String,
         userId: String?,
         sessionId: String?,
         answers: [String: OwlQuestionnaireAnswerValue],
+        isComplete: Bool,
         deviceInfo: DeviceInfo?,
         environment: String?,
         appVersion: String?,
@@ -400,6 +419,7 @@ actor EventTransport {
             session_id: sessionId,
             user_id: userId,
             answers: OwlQuestionnaireAnswersWire(answers: answers),
+            is_complete: isComplete,
             app_version: appVersion,
             sdk_name: OwlmetryVersion.name,
             sdk_version: OwlmetryVersion.current,
@@ -422,7 +442,11 @@ actor EventTransport {
                 do {
                     let decoded = try JSONDecoder().decode(QuestionnaireSubmitResponseBody.self, from: data)
                     let date = Self.iso8601.date(from: decoded.created_at) ?? Date()
-                    return .success(OwlQuestionnaireReceipt(id: decoded.id, createdAt: date))
+                    return .success(OwlQuestionnaireReceipt(
+                        id: decoded.id,
+                        createdAt: date,
+                        wasSubmitted: decoded.was_submitted ?? false
+                    ))
                 } catch {
                     return .failure(.transportFailure("decode failed: \(error.localizedDescription)"))
                 }
@@ -579,4 +603,36 @@ private struct AttributionResponseBody: Decodable {
     let pending: Bool
     let retry_after_seconds: Int?
     let properties: [String: String]
+}
+
+/// Project wire-format draft answers onto the strongly-typed
+/// `OwlQuestionnaireAnswerValue` enum by dispatching on each question's type.
+/// Answers whose question id is no longer in the schema (mid-draft schema
+/// edits) or whose shape doesn't match the question type are skipped — the
+/// SDK pre-fill is best-effort, and the server prunes unknown keys when the
+/// user finally submits.
+func hydrateDraftAnswers(
+    _ raw: [String: AnyAnswerJSON],
+    against schema: OwlQuestionnaireSchema
+) -> [String: OwlQuestionnaireAnswerValue] {
+    var out: [String: OwlQuestionnaireAnswerValue] = [:]
+    for question in schema.questions {
+        guard let value = raw[question.id] else { continue }
+        switch (question, value) {
+        case let (.text, .string(s)):
+            out[question.id] = .text(s)
+        case let (.singleChoice, .string(s)):
+            out[question.id] = .choice(s)
+        case let (.multiChoice, .strings(arr)):
+            out[question.id] = .choices(arr)
+        case let (.rating, .integer(n)):
+            out[question.id] = .rating(n)
+        case let (.nps, .integer(n)):
+            out[question.id] = .nps(n)
+        default:
+            // Shape mismatch — drop the value rather than pre-fill incorrectly.
+            continue
+        }
+    }
+    return out
 }

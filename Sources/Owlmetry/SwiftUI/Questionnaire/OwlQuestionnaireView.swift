@@ -27,6 +27,7 @@ import SwiftUI
 /// it defaults `showsConsent` to `true`.
 public struct OwlQuestionnaireView: View {
     private let questionnaire: OwlQuestionnaire
+    private let inProgress: OwlQuestionnaireDraft?
     private let showsConsent: Bool
     private let consentIcon: Image?
     private let strings: OwlQuestionnaireStrings
@@ -36,6 +37,7 @@ public struct OwlQuestionnaireView: View {
 
     public init(
         questionnaire: OwlQuestionnaire,
+        inProgress: OwlQuestionnaireDraft? = nil,
         showsConsent: Bool = false,
         consentIcon: Image? = Image(systemName: "quote.bubble.fill"),
         strings: OwlQuestionnaireStrings = .default,
@@ -44,6 +46,7 @@ public struct OwlQuestionnaireView: View {
         onDismissed: (() -> Void)? = nil
     ) {
         self.questionnaire = questionnaire
+        self.inProgress = inProgress
         self.showsConsent = showsConsent
         self.consentIcon = consentIcon
         self.strings = strings
@@ -55,6 +58,7 @@ public struct OwlQuestionnaireView: View {
     public var body: some View {
         OwlQuestionnaireFlowContainer(
             questionnaire: questionnaire,
+            inProgress: inProgress,
             showsConsent: showsConsent,
             consentIcon: consentIcon,
             strings: strings,

@@ -138,13 +138,53 @@ public enum OwlQuestionnaireAnswerValue: Sendable, Equatable {
 }
 
 /// Receipt returned by `POST /v1/questionnaires/:slug/responses`.
+/// `wasSubmitted` is `true` only on the call that flipped the server-side
+/// `submitted_at` from null to non-null — used by the flow container to know
+/// whether to transition to the success phase. Subsequent draft-saves return
+/// `wasSubmitted = false`.
 public struct OwlQuestionnaireReceipt: Sendable, Equatable {
     public let id: String
     public let createdAt: Date
+    public let wasSubmitted: Bool
 
-    public init(id: String, createdAt: Date) {
+    public init(id: String, createdAt: Date, wasSubmitted: Bool) {
         self.id = id
         self.createdAt = createdAt
+        self.wasSubmitted = wasSubmitted
+    }
+}
+
+/// An in-progress draft surfaced by `GET /v1/questionnaires/:slug` when the
+/// caller already has an unsubmitted response. The flow container reads this
+/// to pre-fill its answer store and skip to the first unanswered question.
+public struct OwlQuestionnaireDraft: Sendable, Equatable {
+    public let responseId: String
+    public let answers: [String: OwlQuestionnaireAnswerValue]
+
+    public init(responseId: String, answers: [String: OwlQuestionnaireAnswerValue]) {
+        self.responseId = responseId
+        self.answers = answers
+    }
+}
+
+/// Result of `Owl.fetchQuestionnaire(slug:)`. When `questionnaire` is non-nil
+/// the questionnaire exists and is eligible to present; the `inProgress` field
+/// carries the existing draft (if any) so the flow container can resume.
+/// When `questionnaire` is nil, the questionnaire isn't eligible — typically
+/// `already_responded`, `globally_dismissed`, or `inactive`.
+public struct OwlQuestionnaireFetchResult: Sendable, Equatable {
+    public let questionnaire: OwlQuestionnaire?
+    public let inProgress: OwlQuestionnaireDraft?
+    public let ineligibleReason: OwlQuestionnaireIneligibleReason?
+
+    public init(
+        questionnaire: OwlQuestionnaire?,
+        inProgress: OwlQuestionnaireDraft? = nil,
+        ineligibleReason: OwlQuestionnaireIneligibleReason? = nil
+    ) {
+        self.questionnaire = questionnaire
+        self.inProgress = inProgress
+        self.ineligibleReason = ineligibleReason
     }
 }
 
@@ -378,6 +418,49 @@ struct QuestionnaireFetchEnvelope: Decodable {
     let eligible: Bool
     let reason: String?
     let questionnaire: OwlQuestionnaire?
+    let in_progress: QuestionnaireInProgressBody?
+}
+
+/// Wire-level representation of an in-progress draft as returned by the
+/// server's eligibility envelope. Answers are decoded as opaque JSON values
+/// here and projected back into `OwlQuestionnaireAnswerValue` keyed by the
+/// question's type during flow-container hydration.
+struct QuestionnaireInProgressBody: Decodable {
+    let response_id: String
+    let answers: [String: AnyAnswerJSON]
+}
+
+/// Minimal heterogeneous-JSON decoder for draft answers — supports the three
+/// shapes the server emits: string, array-of-string, integer. We can't
+/// decode straight into `OwlQuestionnaireAnswerValue` here because the value
+/// type depends on the question type in the parent schema, which we hydrate
+/// against in the flow container.
+enum AnyAnswerJSON: Sendable {
+    case string(String)
+    case strings([String])
+    case integer(Int)
+}
+
+extension AnyAnswerJSON: Decodable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if let s = try? c.decode(String.self) {
+            self = .string(s)
+            return
+        }
+        if let arr = try? c.decode([String].self) {
+            self = .strings(arr)
+            return
+        }
+        if let n = try? c.decode(Int.self) {
+            self = .integer(n)
+            return
+        }
+        throw DecodingError.dataCorruptedError(
+            in: c,
+            debugDescription: "Unsupported answer value shape"
+        )
+    }
 }
 
 struct QuestionnaireSubmitRequestBody: Encodable {
@@ -385,6 +468,9 @@ struct QuestionnaireSubmitRequestBody: Encodable {
     let session_id: String?
     let user_id: String?
     let answers: OwlQuestionnaireAnswersWire
+    /// false = save a draft, true = final submit (flips server-side
+    /// submitted_at and fires the team notification exactly once).
+    let is_complete: Bool
     let app_version: String?
     let sdk_name: String?
     let sdk_version: String?
@@ -397,6 +483,9 @@ struct QuestionnaireSubmitRequestBody: Encodable {
 struct QuestionnaireSubmitResponseBody: Decodable {
     let id: String
     let created_at: String
+    /// True iff this call flipped server-side `submitted_at` null → non-null.
+    /// Defaults to false for backwards compat if the server omits it.
+    let was_submitted: Bool?
 }
 
 struct QuestionnaireDismissRequestBody: Encodable {

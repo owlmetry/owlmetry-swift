@@ -22,6 +22,7 @@ enum OwlQuestionnairePhase: Equatable {
 /// here drives the smooth small→large animation when consent is accepted.
 struct OwlQuestionnaireFlowContainer: View {
     let questionnaire: OwlQuestionnaire
+    let inProgress: OwlQuestionnaireDraft?
     let showsConsent: Bool
     let consentIcon: Image?
     let strings: OwlQuestionnaireStrings
@@ -38,8 +39,9 @@ struct OwlQuestionnaireFlowContainer: View {
     @State private var phase: OwlQuestionnairePhase
     @State private var detent: PresentationDetent
 
-    // Answer state — backed by a unit-testable value-type store.
-    @State private var answers = OwlQuestionnaireAnswerStore()
+    // Answer state — backed by a unit-testable value-type store. Pre-filled
+    // from `inProgress.answers` on init when resuming an existing draft.
+    @State private var answers: OwlQuestionnaireAnswerStore
 
     @State private var isSubmitting = false
     @State private var errorMessage: String?
@@ -47,6 +49,7 @@ struct OwlQuestionnaireFlowContainer: View {
 
     init(
         questionnaire: OwlQuestionnaire,
+        inProgress: OwlQuestionnaireDraft? = nil,
         showsConsent: Bool,
         consentIcon: Image?,
         strings: OwlQuestionnaireStrings,
@@ -55,14 +58,33 @@ struct OwlQuestionnaireFlowContainer: View {
         onDismissed: (() -> Void)? = nil
     ) {
         self.questionnaire = questionnaire
+        self.inProgress = inProgress
         self.showsConsent = showsConsent
         self.consentIcon = consentIcon
         self.strings = strings
         self.onSubmitted = onSubmitted
         self.onCancel = onCancel
         self.onDismissed = onDismissed
-        _phase = State(initialValue: showsConsent ? .consent : .running(index: 0))
-        _detent = State(initialValue: showsConsent ? .height(Self.consentDetentHeight) : .large)
+
+        // Hydrate the answer store from any server-side draft before SwiftUI
+        // creates page bindings, so the first render already has the saved
+        // values visible.
+        var hydrated = OwlQuestionnaireAnswerStore()
+        if let inProgress {
+            hydrated.prefill(from: inProgress.answers)
+        }
+        _answers = State(initialValue: hydrated)
+
+        // Resume on top of an existing draft skips consent (the user already
+        // opted in earlier) and lands on the first unanswered question. A
+        // fresh-flow init still shows consent when the caller asked for it.
+        let resuming = inProgress != nil
+        let startIndex = resuming
+            ? hydrated.firstUnansweredIndex(in: questionnaire.schema)
+            : 0
+        let showConsentNow = showsConsent && !resuming
+        _phase = State(initialValue: showConsentNow ? .consent : .running(index: startIndex))
+        _detent = State(initialValue: showConsentNow ? .height(Self.consentDetentHeight) : .large)
     }
 
     var body: some View {
@@ -253,6 +275,14 @@ struct OwlQuestionnaireFlowContainer: View {
                 if isLast {
                     Task { await submit() }
                 } else {
+                    // Persist the current answer set as a draft before
+                    // advancing. The server upserts by (project, slug, user)
+                    // so we don't track the response id locally. Fire-and-
+                    // forget — the UI advances immediately while the network
+                    // call resolves in the background. The final submit
+                    // sends the full accumulated answer set anyway, so a
+                    // dropped draft save is recovered on completion.
+                    Task { await saveDraftInBackground() }
                     goNext(from: index)
                 }
             } label: {
@@ -314,6 +344,12 @@ struct OwlQuestionnaireFlowContainer: View {
 
     // MARK: - Submit / dismiss
 
+    /// Final-submit path. Awaits the server, only transitions to .success
+    /// when the response actually flipped to submitted on the server (i.e.,
+    /// `wasSubmitted == true`). On a non-flip result (would only happen if
+    /// the row was already submitted by a sibling device) we still transition
+    /// to .success so the user sees the success screen; their answer set
+    /// merged into the existing row.
     @MainActor
     private func submit() async {
         guard hasAllRequired else {
@@ -323,9 +359,10 @@ struct OwlQuestionnaireFlowContainer: View {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            let receipt = try await Owl.submitQuestionnaireResponse(
+            let receipt = try await Owl.saveQuestionnaireResponse(
                 slug: questionnaire.slug,
-                answers: collectAnswers()
+                answers: collectAnswers(),
+                isComplete: true
             )
             withAnimation(.easeInOut(duration: 0.3)) {
                 phase = .success(receipt)
@@ -334,6 +371,27 @@ struct OwlQuestionnaireFlowContainer: View {
             errorMessage = err.errorDescription
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Persist the current answer set as a draft. Called from each non-final
+    /// Next tap. Errors are swallowed (logged via the SDK) — partial saves
+    /// are best-effort and the eventual final submit retries the full set.
+    @MainActor
+    private func saveDraftInBackground() async {
+        let payload = collectAnswers()
+        // Skip empty saves — happens when the user advances past a question
+        // they haven't answered yet (optional fields). Sending an empty
+        // payload would just hit the server for no reason.
+        guard !payload.isEmpty else { return }
+        do {
+            _ = try await Owl.saveQuestionnaireResponse(
+                slug: questionnaire.slug,
+                answers: payload,
+                isComplete: false
+            )
+        } catch {
+            // Soft-fail: final submit will resend the accumulated answers.
         }
     }
 

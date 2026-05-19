@@ -6,7 +6,7 @@ final class OwlQuestionnaireFlowTests: XCTestCase {
     // MARK: - Phase equality
 
     func testPhaseEquality() {
-        let receipt = OwlQuestionnaireReceipt(id: "r1", createdAt: Date(timeIntervalSince1970: 0))
+        let receipt = OwlQuestionnaireReceipt(id: "r1", createdAt: Date(timeIntervalSince1970: 0), wasSubmitted: true)
         XCTAssertEqual(OwlQuestionnairePhase.consent, .consent)
         XCTAssertEqual(OwlQuestionnairePhase.running(index: 2), .running(index: 2))
         XCTAssertNotEqual(OwlQuestionnairePhase.running(index: 0), .running(index: 1))
@@ -121,6 +121,53 @@ final class OwlQuestionnaireFlowTests: XCTestCase {
         store.rating["r1"] = 3
         // multi/nps both optional, untouched — should not block
         XCTAssertTrue(store.hasAllRequired(schema))
+    }
+
+    // MARK: - Resume / prefill
+
+    func testPrefillHydratesEveryAnswerType() {
+        var store = OwlQuestionnaireAnswerStore()
+        store.prefill(from: [
+            "t1": .text("hello"),
+            "s1": .choice("a"),
+            "m1": .choices(["x", "y"]),
+            "r1": .rating(3),
+            "n1": .nps(8),
+        ])
+        XCTAssertEqual(store.text["t1"], "hello")
+        XCTAssertEqual(store.single["s1"], "a")
+        XCTAssertEqual(store.multi["m1"], ["x", "y"])
+        XCTAssertEqual(store.rating["r1"], 3)
+        XCTAssertEqual(store.nps["n1"], 8)
+    }
+
+    func testFirstUnansweredLandsOnFirstMissingRequiredOrOptional() {
+        let schema = schemaWithEveryType()
+        var store = OwlQuestionnaireAnswerStore()
+        // Nothing answered → land on index 0 (t1)
+        XCTAssertEqual(store.firstUnansweredIndex(in: schema), 0)
+        // Answer t1 → land on s1 (index 1)
+        store.text["t1"] = "ok"
+        XCTAssertEqual(store.firstUnansweredIndex(in: schema), 1)
+        // Answer s1 → land on m1 (index 2). m1 is optional but empty, so
+        // it still counts as unanswered for landing-position purposes.
+        store.single["s1"] = "a"
+        XCTAssertEqual(store.firstUnansweredIndex(in: schema), 2)
+    }
+
+    func testFirstUnansweredLandsOnLastWhenAllAnswered() {
+        let schema = schemaWithEveryType()
+        var store = OwlQuestionnaireAnswerStore()
+        store.prefill(from: [
+            "t1": .text("hi"),
+            "s1": .choice("a"),
+            "m1": .choices(["x"]),
+            "r1": .rating(4),
+            "n1": .nps(9),
+        ])
+        // All five questions answered, no Submit yet → land on last index
+        // so the Submit button is live on the resumed page.
+        XCTAssertEqual(store.firstUnansweredIndex(in: schema), schema.questions.count - 1)
     }
 
     // MARK: - Public API surface (compile-time check)

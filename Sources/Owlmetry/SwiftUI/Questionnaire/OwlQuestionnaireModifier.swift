@@ -28,7 +28,16 @@ private struct OwlQuestionnaireGate: ViewModifier {
     let onCancel: (() -> Void)?
     let onDismissed: (() -> Void)?
 
-    @State private var spec: OwlQuestionnaire?
+    /// Identifiable container so `.sheet(item:)` carries both the
+    /// questionnaire and any in-progress draft for resume. Identified by
+    /// the questionnaire id (stable across the gate's lifetime).
+    private struct PresentationPayload: Identifiable {
+        let questionnaire: OwlQuestionnaire
+        let inProgress: OwlQuestionnaireDraft?
+        var id: String { questionnaire.id }
+    }
+
+    @State private var payload: PresentationPayload?
     @State private var hasEvaluated = false
 
     func body(content: Content) -> some View {
@@ -45,17 +54,21 @@ private struct OwlQuestionnaireGate: ViewModifier {
     private var sheetHost: some View {
         Color.clear
             .frame(width: 0, height: 0)
-            .sheet(item: $spec) { spec in
+            .sheet(item: $payload) { payload in
                 NavigationStack {
                     OwlQuestionnaireView(
-                        questionnaire: spec,
-                        showsConsent: showsConsent,
+                        questionnaire: payload.questionnaire,
+                        inProgress: payload.inProgress,
+                        // Resume on top of an existing draft means the user
+                        // already opted in earlier — replaying the consent
+                        // detent would feel rude. Skip it on resume.
+                        showsConsent: showsConsent && payload.inProgress == nil,
                         consentIcon: consentIcon,
                         strings: strings,
                         onSubmitted: onSubmitted,
                         onCancel: {
                             onCancel?()
-                            self.spec = nil
+                            self.payload = nil
                         },
                         onDismissed: onDismissed
                     )
@@ -74,9 +87,13 @@ private struct OwlQuestionnaireGate: ViewModifier {
         guard trigger.isSatisfied(state: snapshot) else { return }
         if let isEligible, isEligible() == false { return }
         do {
-            if let questionnaire = try await Owl.fetchQuestionnaire(slug: slug) {
+            let result = try await Owl.fetchQuestionnaire(slug: slug)
+            if let questionnaire = result.questionnaire {
                 Owl.markQuestionnaireShown(slug: slug)
-                spec = questionnaire
+                payload = PresentationPayload(
+                    questionnaire: questionnaire,
+                    inProgress: result.inProgress
+                )
             }
         } catch {
             // Soft-fail: trigger re-evaluates on next foreground.

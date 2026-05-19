@@ -520,25 +520,34 @@ public enum Owl {
     /// Timestamp of the first-ever `Owl.configure(...)` on this install.
     public static var firstLaunchAt: Date? { OwlQuestionnaireState.shared.firstLaunchAt }
 
-    /// Fetch a questionnaire by slug. Returns `nil` when the user is ineligible
-    /// (already responded, globally dismissed, or the questionnaire is inactive).
+    /// Fetch a questionnaire by slug, plus any in-progress draft the caller
+    /// already started. Result's `.questionnaire` is nil when the user is
+    /// ineligible (already responded, globally dismissed, or the
+    /// questionnaire is inactive — in that case `.ineligibleReason` is set).
     /// Throws on slug-not-found or transport / server errors.
-    public static func fetchQuestionnaire(slug: String) async throws -> OwlQuestionnaire? {
+    public static func fetchQuestionnaire(slug: String) async throws -> OwlQuestionnaireFetchResult {
         let snapshot = transportSnapshot()
         guard let snapshot else { throw OwlQuestionnaireError.notConfigured }
         let result = await snapshot.transport.fetchQuestionnaire(slug: slug, userId: snapshot.userId)
         switch result {
-        case .success(let q): return q
+        case .success(let res): return res
         case .failure(let err): throw err
         }
     }
 
-    /// Submit a completed response. Answers are validated against the
-    /// questionnaire's current schema on the server. Returns a receipt with
-    /// the response id and server timestamp.
-    public static func submitQuestionnaireResponse(
+    /// Save a partial answer set (`isComplete: false`) or finalize a
+    /// submission (`isComplete: true`). The server upserts by (project, slug,
+    /// user_id), so the SDK doesn't track the response id across calls —
+    /// every save sends the full accumulated answer set and the server
+    /// merges. The returned receipt's `wasSubmitted` is `true` exactly once
+    /// per response (the call that flipped `submitted_at` from null) and
+    /// drives the flow container's success transition. Telemetry: emits
+    /// `sdk:questionnaire_submitted` only on the flip — silent on partial
+    /// saves to avoid flooding the event stream.
+    public static func saveQuestionnaireResponse(
         slug: String,
-        answers: [String: OwlQuestionnaireAnswerValue]
+        answers: [String: OwlQuestionnaireAnswerValue],
+        isComplete: Bool
     ) async throws -> OwlQuestionnaireReceipt {
         let snapshot = transportSnapshot()
         guard let snapshot else { throw OwlQuestionnaireError.notConfigured }
@@ -549,11 +558,12 @@ public enum Owl {
         let isDev = false
         #endif
 
-        let result = await snapshot.transport.submitQuestionnaireResponse(
+        let result = await snapshot.transport.saveQuestionnaireResponse(
             slug: slug,
             userId: snapshot.userId,
             sessionId: snapshot.sessionId,
             answers: answers,
+            isComplete: isComplete,
             deviceInfo: snapshot.deviceInfo,
             environment: snapshot.deviceInfo.platform.rawValue,
             appVersion: snapshot.deviceInfo.appVersion,
@@ -561,9 +571,11 @@ public enum Owl {
         )
         switch result {
         case .success(let receipt):
-            log("sdk:questionnaire_submitted", level: .info, screenName: nil,
-                attributes: ["slug": slug],
-                file: #file, function: #function, line: #line)
+            if receipt.wasSubmitted {
+                log("sdk:questionnaire_submitted", level: .info, screenName: nil,
+                    attributes: ["slug": slug],
+                    file: #file, function: #function, line: #line)
+            }
             return receipt
         case .failure(let err):
             throw err

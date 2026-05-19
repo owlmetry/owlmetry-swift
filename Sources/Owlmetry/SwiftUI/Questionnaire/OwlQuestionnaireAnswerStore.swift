@@ -10,6 +10,34 @@ struct OwlQuestionnaireAnswerStore: Equatable {
     var rating: [String: Int] = [:]
     var nps: [String: Int] = [:]
 
+    /// Hydrate the store from server-side draft state (the `in_progress`
+    /// payload of the eligibility envelope). Unknown question shapes are
+    /// silently skipped — pre-fill is best-effort and the server prunes
+    /// stale keys when the user completes.
+    mutating func prefill(from answers: [String: OwlQuestionnaireAnswerValue]) {
+        for (key, value) in answers {
+            switch value {
+            case .text(let s):       text[key] = s
+            case .choice(let s):     single[key] = s
+            case .choices(let arr):  multi[key] = Set(arr)
+            case .rating(let n):     rating[key] = n
+            case .nps(let n):        nps[key] = n
+            }
+        }
+    }
+
+    /// Index of the first question in `schema.questions` whose id is not
+    /// answered yet. Returns `schema.questions.count - 1` when every question
+    /// is answered (so the flow lands on the last page with the Submit
+    /// button live). Returns 0 for an empty store.
+    func firstUnansweredIndex(in schema: OwlQuestionnaireSchema) -> Int {
+        let questions = schema.questions
+        for (i, q) in questions.enumerated() {
+            if !isAnswered(q) { return i }
+        }
+        return max(0, questions.count - 1)
+    }
+
     func isAnswered(_ question: OwlQuestionnaireQuestion) -> Bool {
         switch question {
         case .text(let q):
