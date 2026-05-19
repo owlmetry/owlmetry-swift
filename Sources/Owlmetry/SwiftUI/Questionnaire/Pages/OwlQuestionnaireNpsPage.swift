@@ -11,8 +11,7 @@ struct OwlQuestionnaireNpsPage: View {
         VStack(alignment: .leading, spacing: 20) {
             questionHeader(
                 title: question.title,
-                subtitle: question.subtitle,
-                required: question.required
+                subtitle: question.subtitle
             )
 
             ScrollView(.horizontal, showsIndicators: false) {

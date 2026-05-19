@@ -242,6 +242,9 @@ struct OwlQuestionnaireFlowContainer: View {
                         .frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.bordered)
+                // Override the inherited accent tint — Back is a low-priority
+                // exit, shouldn't visually compete with Next/Submit.
+                .tint(.gray)
                 .disabled(isSubmitting)
             }
 

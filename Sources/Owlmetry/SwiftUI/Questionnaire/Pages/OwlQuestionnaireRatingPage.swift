@@ -9,8 +9,7 @@ struct OwlQuestionnaireRatingPage: View {
         VStack(alignment: .leading, spacing: 24) {
             questionHeader(
                 title: question.title,
-                subtitle: question.subtitle,
-                required: question.required
+                subtitle: question.subtitle
             )
 
             HStack(spacing: 8) {

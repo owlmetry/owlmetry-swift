@@ -12,8 +12,7 @@ struct OwlQuestionnaireTextPage: View {
             VStack(alignment: .leading, spacing: 16) {
                 questionHeader(
                     title: question.title,
-                    subtitle: question.subtitle,
-                    required: question.required
+                    subtitle: question.subtitle
                 )
 
                 if question.multiline {
