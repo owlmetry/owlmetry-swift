@@ -4,8 +4,11 @@ import SwiftUI
 struct OwlQuestionnaireTextPage: View {
     let question: OwlQuestionnaireTextQuestion
     @Binding var value: String
-
-    @FocusState private var isFocused: Bool
+    // Container-owned focus so the keyboard tracks the current question across
+    // TabView page swaps. TabView(.page) keeps neighbouring pages alive, so a
+    // page-local @FocusState would stay `true` after the user moved off this
+    // page and the keyboard would never dismiss.
+    var focused: FocusState<String?>.Binding
 
     var body: some View {
         ScrollView {
@@ -20,7 +23,7 @@ struct OwlQuestionnaireTextPage: View {
                     // rounded fill is the only visible surface — matches the
                     // single-line TextField branch below.
                     TextEditor(text: $value)
-                        .focused($isFocused)
+                        .focused(focused, equals: question.id)
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: 160)
                         .padding(12)
@@ -28,7 +31,7 @@ struct OwlQuestionnaireTextPage: View {
                         .accessibilityLabel(Text(question.title))
                 } else {
                     let field = TextField(question.placeholder ?? "", text: $value)
-                        .focused($isFocused)
+                        .focused(focused, equals: question.id)
                         .padding(.vertical, 14)
                         .padding(.horizontal, 16)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.08)))
@@ -43,7 +46,6 @@ struct OwlQuestionnaireTextPage: View {
             .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
-        .onAppear { isFocused = true }
     }
 }
 #endif

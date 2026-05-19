@@ -47,6 +47,12 @@ struct OwlQuestionnaireFlowContainer: View {
     @State private var errorMessage: String?
     @State private var showDismissConfirm = false
 
+    // Keyboard focus follows the *current* question, not page lifecycle —
+    // TabView(.page) keeps neighbouring pages alive so a page-local
+    // @FocusState would leave the keyboard up after the user advanced off a
+    // text question. nil = no field focused / keyboard dismissed.
+    @FocusState private var focusedTextQuestionId: String?
+
     init(
         questionnaire: OwlQuestionnaire,
         inProgress: OwlQuestionnaireDraft? = nil,
@@ -168,20 +174,17 @@ struct OwlQuestionnaireFlowContainer: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
-            // Pages — TabView gives a smooth horizontal swipe between questions
-            // while still letting our buttons drive the actual selection.
-            TabView(selection: bindingFor(current: current)) {
-                ForEach(Array(questions.enumerated()), id: \.offset) { i, q in
-                    pageView(for: q)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 16)
-                        .tag(i)
-                }
-            }
-            #if !os(macOS)
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            #endif
-            .animation(.easeInOut(duration: 0.25), value: current)
+            // Single-page renderer. Navigation is button-driven only — the
+            // earlier TabView(.page) variant let users swipe forward past a
+            // half-answered required question, which the Next button is
+            // supposed to gate. `.id(current)` triggers the crossfade.
+            pageView(for: question)
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .id(current)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: current)
 
             buttonBar(index: current, total: total, question: question)
                 .padding(.horizontal, 20)
@@ -203,16 +206,33 @@ struct OwlQuestionnaireFlowContainer: View {
                 .disabled(isSubmitting)
             }
         }
+        // Seed focus for the question we land on (covers fresh starts and the
+        // resume-mid-draft path that jumps to firstUnansweredIndex). Subsequent
+        // navigation is handled by the onChange below.
+        .onAppear { syncFocus(to: current) }
+        // One-parameter form for iOS 16 / macOS 13 floor — the two-parameter
+        // closure is iOS 17+. Deprecation warning on newer OSes is acceptable.
+        .onChange(of: phase) { newPhase in
+            if case .running(let idx) = newPhase {
+                syncFocus(to: idx)
+            } else {
+                focusedTextQuestionId = nil
+            }
+        }
     }
 
-    private func bindingFor(current: Int) -> Binding<Int> {
-        Binding(
-            get: { current },
-            set: { newValue in
-                guard newValue != current else { return }
-                phase = .running(index: newValue)
-            }
-        )
+    /// Sets the keyboard focus to match `index`'s question — its id if it's a
+    /// text question, otherwise nil. Single source of truth for "which page is
+    /// allowed to own the keyboard right now".
+    private func syncFocus(to index: Int) {
+        let questions = questionnaire.schema.questions
+        guard !questions.isEmpty else { return }
+        let clamped = max(0, min(index, questions.count - 1))
+        if case .text(let q) = questions[clamped] {
+            focusedTextQuestionId = q.id
+        } else {
+            focusedTextQuestionId = nil
+        }
     }
 
     @ViewBuilder
@@ -221,7 +241,8 @@ struct OwlQuestionnaireFlowContainer: View {
         case .text(let q):
             OwlQuestionnaireTextPage(
                 question: q,
-                value: bindingForText(q.id)
+                value: bindingForText(q.id),
+                focused: $focusedTextQuestionId
             )
         case .singleChoice(let q):
             OwlQuestionnaireSingleChoicePage(
@@ -312,6 +333,7 @@ struct OwlQuestionnaireFlowContainer: View {
     }
 
     private func declineLater() {
+        focusedTextQuestionId = nil
         onCancel?()
         dismiss()
     }
@@ -333,11 +355,13 @@ struct OwlQuestionnaireFlowContainer: View {
     }
 
     private func cancelMidFlow() {
+        focusedTextQuestionId = nil
         onCancel?()
         dismiss()
     }
 
     private func finishSuccess(receipt: OwlQuestionnaireReceipt) {
+        focusedTextQuestionId = nil
         onSubmitted?(receipt)
         dismiss()
     }
@@ -401,6 +425,7 @@ struct OwlQuestionnaireFlowContainer: View {
         defer { isSubmitting = false }
         do {
             _ = try await Owl.dismissQuestionnaires()
+            focusedTextQuestionId = nil
             onDismissed?()
             dismiss()
         } catch let err as OwlQuestionnaireError {
