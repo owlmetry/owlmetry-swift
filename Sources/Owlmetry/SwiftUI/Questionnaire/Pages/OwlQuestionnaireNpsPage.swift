@@ -8,10 +8,6 @@ struct OwlQuestionnaireNpsPage: View {
     let highLabel: LocalizedStringResource
 
     var body: some View {
-        // Outer vertical ScrollView so a long title/subtitle scrolls instead
-        // of pushing the score row off-screen. Inner horizontal ScrollView
-        // around the 0-10 chips stays — they need their own axis since the
-        // row is wider than the sheet on small phones.
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 questionHeader(
@@ -19,21 +15,20 @@ struct OwlQuestionnaireNpsPage: View {
                     subtitle: question.subtitle
                 )
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                // Size chips to fit all 11 across the available width. Spacing
+                // shrinks before chip size does so the row never overflows on
+                // narrow phones, while still hitting a reasonable touch target.
+                GeometryReader { geo in
+                    let spacing: CGFloat = 4
+                    let chipSize = max(28, (geo.size.width - spacing * 10) / 11)
+                    HStack(spacing: spacing) {
                         ForEach(0...10, id: \.self) { score in
-                            npsButton(for: score)
+                            npsButton(for: score, size: chipSize)
                         }
                     }
-                    .padding(.leading, 24)
-                    .padding(.trailing, 16)
-                    .padding(.vertical, 4)
+                    .frame(width: geo.size.width, alignment: .leading)
                 }
-                // Negate the page's 24pt horizontal padding so the scroller bleeds
-                // to both screen edges. The inner HStack restores 24pt of leading
-                // padding so the first chip lines up with the rest of the page
-                // content when un-scrolled.
-                .padding(.horizontal, -24)
+                .frame(height: 44)
 
                 HStack {
                     Text(lowLabel)
@@ -47,7 +42,7 @@ struct OwlQuestionnaireNpsPage: View {
         }
     }
 
-    private func npsButton(for score: Int) -> some View {
+    private func npsButton(for score: Int, size: CGFloat) -> some View {
         let isSelected = value == score
         return Button {
             OwlHaptics.tap()
@@ -55,7 +50,7 @@ struct OwlQuestionnaireNpsPage: View {
         } label: {
             Text("\(score)")
                 .font(.callout.weight(.medium))
-                .frame(width: 40, height: 40)
+                .frame(width: size, height: size)
                 .background(
                     Circle().fill(
                         isSelected
