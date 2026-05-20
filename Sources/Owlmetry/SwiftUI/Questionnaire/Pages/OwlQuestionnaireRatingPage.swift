@@ -6,22 +6,27 @@ struct OwlQuestionnaireRatingPage: View {
     @Binding var value: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            questionHeader(
-                title: question.title,
-                subtitle: question.subtitle
-            )
+        // ScrollView so a long title/subtitle (a real concern — copy is
+        // server-driven and may be paragraph-length) scrolls instead of
+        // pushing the stars off-screen. The header already uses
+        // `.fixedSize(horizontal: false, vertical: true)` so it always
+        // renders at full natural height.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                questionHeader(
+                    title: question.title,
+                    subtitle: question.subtitle
+                )
 
-            HStack(spacing: 8) {
-                ForEach(1...question.scale, id: \.self) { star in
-                    starButton(for: star)
+                HStack(spacing: 8) {
+                    ForEach(1...question.scale, id: \.self) { star in
+                        starButton(for: star)
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
-
-            Spacer()
+            .padding(.bottom, 24)
         }
-        .padding(.bottom, 24)
     }
 
     private func starButton(for star: Int) -> some View {

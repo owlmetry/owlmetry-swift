@@ -30,14 +30,29 @@ struct OwlQuestionnaireFlowContainer: View {
     let onCancel: (() -> Void)?
     let onDismissed: (() -> Void)?
 
-    /// Height of the small consent detent. Sized to fit the title + body + 3
-    /// stacked buttons + padding on iPhone SE without scrolling.
-    static let consentDetentHeight: CGFloat = 380
+    /// Initial height of the small consent detent. The actual detent is
+    /// driven by `measuredConsentDetentHeight` once the content's intrinsic
+    /// size has been measured — see `ConsentContentHeightPreferenceKey`.
+    /// This initial value covers the common case (icon + 1-2 line title +
+    /// 1-2 line body + 3 buttons) so the sheet rarely needs to grow on first
+    /// render. Floor is `minConsentDetentHeight` so the sheet never collapses
+    /// awkwardly on a missed measurement.
+    static let initialConsentDetentHeight: CGFloat = 380
+    static let minConsentDetentHeight: CGFloat = 320
+    /// Hard ceiling for the dynamic detent. Above this, `.large` is the
+    /// better experience (full-sheet) so we don't render a near-fullscreen
+    /// "small" detent.
+    static let maxConsentDetentHeight: CGFloat = 720
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var phase: OwlQuestionnairePhase
     @State private var detent: PresentationDetent
+    /// Tracks the consent view's intrinsic content height so the detent can
+    /// grow to fit longer titles/descriptions (or shrink for shorter ones).
+    /// Updated via `ConsentContentHeightPreferenceKey` from a GeometryReader
+    /// background on the consent view.
+    @State private var measuredConsentDetentHeight: CGFloat = OwlQuestionnaireFlowContainer.initialConsentDetentHeight
 
     // Answer state — backed by a unit-testable value-type store. Pre-filled
     // from `inProgress.answers` on init when resuming an existing draft.
@@ -90,7 +105,7 @@ struct OwlQuestionnaireFlowContainer: View {
             : 0
         let showConsentNow = showsConsent && !resuming
         _phase = State(initialValue: showConsentNow ? .consent : .running(index: startIndex))
-        _detent = State(initialValue: showConsentNow ? .height(Self.consentDetentHeight) : .large)
+        _detent = State(initialValue: showConsentNow ? .height(Self.initialConsentDetentHeight) : .large)
     }
 
     var body: some View {
@@ -98,6 +113,9 @@ struct OwlQuestionnaireFlowContainer: View {
             .presentationDetents(detentOptions, selection: $detent)
             .interactiveDismissDisabled(true)
             .presentationDragIndicator(.hidden)
+            .onPreferenceChange(ConsentContentHeightPreferenceKey.self) { measured in
+                applyMeasuredConsentHeight(measured)
+            }
             .alert(Text(strings.errorTitle), isPresented: errorAlertBinding, actions: {
                 Button(role: .cancel) { errorMessage = nil } label: { Text("OK") }
             }, message: {
@@ -123,9 +141,33 @@ struct OwlQuestionnaireFlowContainer: View {
         // accepts (or we open directly into questions), lock to .large so the
         // sheet can't be swiped back down to the consent height.
         if case .consent = phase {
-            return [.height(Self.consentDetentHeight), .large]
+            return [.height(measuredConsentDetentHeight), .large]
         }
         return [.large]
+    }
+
+    /// Clamp the measured consent content height and propagate it to the
+    /// detent. Skips no-op updates (sub-pixel drift) to avoid render loops.
+    /// Falls back to `.large` when content exceeds the ceiling — at that
+    /// point a small detent stops being "small" and the full sheet is the
+    /// better UX.
+    private func applyMeasuredConsentHeight(_ measured: CGFloat) {
+        guard measured > 1 else { return }
+        // Pad the measured intrinsic height so the sheet has a touch of
+        // breathing room under the last button instead of clipping to its
+        // baseline.
+        let padded = ceil(measured) + 16
+        let clamped = min(max(padded, Self.minConsentDetentHeight), Self.maxConsentDetentHeight)
+        guard abs(clamped - measuredConsentDetentHeight) > 0.5 else { return }
+        measuredConsentDetentHeight = clamped
+        guard case .consent = phase else { return }
+        // Above the ceiling, switch the active detent to .large — the small
+        // detent would now obscure the buttons or feel oppressive.
+        if padded > Self.maxConsentDetentHeight {
+            detent = .large
+        } else {
+            detent = .height(clamped)
+        }
     }
 
     @ViewBuilder
@@ -142,6 +184,19 @@ struct OwlQuestionnaireFlowContainer: View {
                 onAccept: acceptConsent,
                 onLater: declineLater,
                 onNever: { showDismissConfirm = true }
+            )
+            // Measure the consent view's intrinsic height so the small detent
+            // resizes to fit longer titles/descriptions. The view itself hugs
+            // its content (no greedy Spacer), so the GeometryReader's reported
+            // size matches the natural layout height.
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(
+                            key: ConsentContentHeightPreferenceKey.self,
+                            value: proxy.size.height
+                        )
+                }
             )
             #if !os(macOS)
             .toolbar(.hidden, for: .navigationBar)
@@ -478,6 +533,17 @@ struct OwlQuestionnaireFlowContainer: View {
 
     private func collectAnswers() -> [String: OwlQuestionnaireAnswerValue] {
         answers.collected(questionnaire.schema)
+    }
+}
+
+/// Carries the consent view's measured intrinsic height up to the container
+/// so the small sheet detent can resize to fit the content. `reduce` takes
+/// the max so a stale 0 from a sibling layer never overrides a real
+/// measurement.
+private struct ConsentContentHeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 #endif

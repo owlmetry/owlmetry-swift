@@ -19,6 +19,11 @@ struct OwlQuestionnaireConsentView: View {
     let onNever: () -> Void
 
     var body: some View {
+        // No greedy Spacer between the message and the accept button — a Spacer
+        // here forces the VStack to fill its parent vertically, which under a
+        // fixed sheet detent compresses the message Text to a single line and
+        // truncates it. Hugging the content lets the container measure the
+        // intrinsic height and size the detent to match.
         VStack(alignment: .leading, spacing: 12) {
             if let icon {
                 icon
@@ -32,14 +37,14 @@ struct OwlQuestionnaireConsentView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, icon == nil ? 24 : 0)
 
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer(minLength: 16)
+                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 OwlHaptics.tap()
@@ -50,6 +55,7 @@ struct OwlQuestionnaireConsentView: View {
                     .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.borderedProminent)
+            .padding(.top, 16)
 
             VStack(spacing: 4) {
                 Button {
