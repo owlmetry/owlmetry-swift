@@ -198,6 +198,11 @@ struct OwlQuestionnaireFlowContainer: View {
                         )
                 }
             )
+            .onAppear {
+                Owl.info("sdk:questionnaire_consent_shown", attributes: [
+                    "_slug": questionnaire.slug,
+                ])
+            }
             #if !os(macOS)
             .toolbar(.hidden, for: .navigationBar)
             #endif
@@ -381,6 +386,9 @@ struct OwlQuestionnaireFlowContainer: View {
     // MARK: - Phase transitions
 
     private func acceptConsent() {
+        Owl.info("sdk:questionnaire_started", attributes: [
+            "_slug": questionnaire.slug,
+        ])
         withAnimation(.easeInOut(duration: 0.3)) {
             phase = .running(index: 0)
             detent = .large
@@ -388,6 +396,10 @@ struct OwlQuestionnaireFlowContainer: View {
     }
 
     private func declineLater() {
+        Owl.debug("sdk:questionnaire_consent_dismissed", attributes: [
+            "_slug": questionnaire.slug,
+            "_reason": "later",
+        ])
         focusedTextQuestionId = nil
         onCancel?()
         dismiss()
@@ -443,6 +455,9 @@ struct OwlQuestionnaireFlowContainer: View {
                 answers: collectAnswers(),
                 isComplete: true
             )
+            Owl.info("sdk:questionnaire_submitted", attributes: [
+                "_slug": questionnaire.slug,
+            ])
             withAnimation(.easeInOut(duration: 0.3)) {
                 phase = .success(receipt)
             }
@@ -480,6 +495,10 @@ struct OwlQuestionnaireFlowContainer: View {
         defer { isSubmitting = false }
         do {
             _ = try await Owl.dismissQuestionnaires()
+            Owl.debug("sdk:questionnaire_consent_dismissed", attributes: [
+                "_slug": questionnaire.slug,
+                "_reason": "never",
+            ])
             focusedTextQuestionId = nil
             onDismissed?()
             dismiss()
