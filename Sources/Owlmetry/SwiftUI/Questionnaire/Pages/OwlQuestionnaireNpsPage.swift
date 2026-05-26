@@ -15,18 +15,18 @@ struct OwlQuestionnaireNpsPage: View {
                     subtitle: question.subtitle
                 )
 
-                // Size chips to fit all 11 across the available width. Spacing
-                // shrinks before chip size does so the row never overflows on
-                // narrow phones, while still hitting a reasonable touch target.
+                // Size chips to exactly fit all 11 across the available width.
+                // No floor — a previous 28pt minimum overflowed by ~3pt on
+                // standard iPhones (clipped the "10" on the right edge).
                 GeometryReader { geo in
                     let spacing: CGFloat = 4
-                    let chipSize = max(28, (geo.size.width - spacing * 10) / 11)
+                    let chipSize = min(36, (geo.size.width - spacing * 10) / 11)
                     HStack(spacing: spacing) {
                         ForEach(0...10, id: \.self) { score in
                             npsButton(for: score, size: chipSize)
                         }
                     }
-                    .frame(width: geo.size.width, alignment: .leading)
+                    .frame(width: geo.size.width, alignment: .center)
                 }
                 .frame(height: 44)
 
