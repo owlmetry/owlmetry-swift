@@ -581,6 +581,8 @@ final class SDKIntegrationTests: XCTestCase {
                 buildNumber: "1",
                 deviceModel: "Mac",
                 locale: "en_US",
+                preferredLanguage: "en-US",
+                supportedLanguages: ["en"],
                 isDev: true,
                 timestamp: ISO8601DateFormatter().string(from: Date())
             )

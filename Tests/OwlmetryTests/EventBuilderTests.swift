@@ -8,7 +8,9 @@ final class EventBuilderTests: XCTestCase {
         appVersion: "1.0",
         buildNumber: "42",
         deviceModel: "iPhone16,1",
-        locale: "en_US"
+        locale: "en_US",
+        preferredLanguage: "fr-CA",
+        supportedLanguages: ["en", "de"]
     )
 
     func testBuildsEventWithAllFields() {
@@ -37,6 +39,8 @@ final class EventBuilderTests: XCTestCase {
         XCTAssertEqual(event.buildNumber, "42")
         XCTAssertEqual(event.deviceModel, "iPhone16,1")
         XCTAssertEqual(event.locale, "en_US")
+        XCTAssertEqual(event.preferredLanguage, "fr-CA")
+        XCTAssertEqual(event.supportedLanguages, ["en", "de"])
         XCTAssertEqual(event.sdkName, OwlmetryVersion.name)
         XCTAssertEqual(event.sdkVersion, OwlmetryVersion.current)
     }

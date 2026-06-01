@@ -56,6 +56,8 @@ enum EventBuilder {
             buildNumber: deviceInfo.buildNumber,
             deviceModel: deviceInfo.deviceModel,
             locale: deviceInfo.locale,
+            preferredLanguage: deviceInfo.preferredLanguage,
+            supportedLanguages: deviceInfo.supportedLanguages.isEmpty ? nil : deviceInfo.supportedLanguages,
             isDev: isDev,
             timestamp: isoFormatter.string(from: Date())
         )

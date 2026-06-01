@@ -20,6 +20,8 @@ final class LogEventTests: XCTestCase {
             buildNumber: "100",
             deviceModel: "iPhone16,1",
             locale: "en_US",
+            preferredLanguage: "fr-FR",
+            supportedLanguages: ["en", "de"],
             isDev: true,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
@@ -33,6 +35,8 @@ final class LogEventTests: XCTestCase {
         XCTAssertEqual(decoded.message, event.message)
         XCTAssertEqual(decoded.screenName, event.screenName)
         XCTAssertEqual(decoded.environment, event.environment)
+        XCTAssertEqual(decoded.preferredLanguage, event.preferredLanguage)
+        XCTAssertEqual(decoded.supportedLanguages, event.supportedLanguages)
     }
 
     func testJSONKeysAreSnakeCase() throws {
@@ -53,6 +57,8 @@ final class LogEventTests: XCTestCase {
             buildNumber: nil,
             deviceModel: nil,
             locale: nil,
+            preferredLanguage: "fr-CA",
+            supportedLanguages: ["en", "de"],
             isDev: false,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
@@ -63,6 +69,9 @@ final class LogEventTests: XCTestCase {
         XCTAssertTrue(json.contains("client_event_id"))
         XCTAssertTrue(json.contains("session_id"))
         XCTAssertFalse(json.contains("clientEventId"))
+        XCTAssertTrue(json.contains("preferred_language"))
+        XCTAssertTrue(json.contains("supported_languages"))
+        XCTAssertFalse(json.contains("preferredLanguage"))
     }
 
     func testNilFieldsOmittedInJSON() throws {
@@ -83,6 +92,8 @@ final class LogEventTests: XCTestCase {
             buildNumber: nil,
             deviceModel: nil,
             locale: nil,
+            preferredLanguage: nil,
+            supportedLanguages: nil,
             isDev: false,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
@@ -98,6 +109,8 @@ final class LogEventTests: XCTestCase {
         XCTAssertNil(json["os_version"])
         XCTAssertNil(json["sdk_name"])
         XCTAssertNil(json["sdk_version"])
+        XCTAssertNil(json["preferred_language"])
+        XCTAssertNil(json["supported_languages"])
     }
 
     func testSDKNameAndVersionEncodedAsSnakeCase() throws {
@@ -118,6 +131,8 @@ final class LogEventTests: XCTestCase {
             buildNumber: nil,
             deviceModel: nil,
             locale: nil,
+            preferredLanguage: nil,
+            supportedLanguages: nil,
             isDev: false,
             timestamp: "2026-01-01T00:00:00.000Z"
         )
